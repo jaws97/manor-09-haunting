@@ -57,7 +57,9 @@ Photo tiers from the movie plan still apply if real likenesses are wanted later 
 ## Build status
 **Built (Sep 23):** scaffold on the Studio 09 engine (stores, PIN, polling, API, rehearsal script, Supabase schema — all renamed for the manor: invites/rooms/screams/whispers) · all five surfaces · the full run of show on `/screen` with synthesised sound · the wax-seal invitation · the parlour with microphone screams and spirit-photo developing · the gate teaser with dust-sheeted frames · 26 of 27 portraits + 4 backdrops generated and processed.
 
-**Next:** portrait #20 (generator keeps rejecting the scene; try again or hand-pick) · organiser's poster-style review at `/host/portraits` · real inside jokes in `src/data/residents.ts` taglines · keeper's voice (pick a voice, record the 37 lines at `/host/script`) · Vercel project + `node scripts/setup-supabase.mjs` · full rehearsal on the real projector with a mid-range Android + iPhone (mic permission prompt, seal hold, haptics).
+**Also built (Sep 23, evening):** the invitation rebuilt around a drag-to-tear (letter-slot delivery, fibre ticks, the wax snapping as the tear passes, the strip flying off) on black gothic stationery · all 27 portraits in · **live on Vercel: https://manor-09-haunting.vercel.app** (project `manor-09-haunting`, Supabase store on the shared `funfriday-db` project with `m09_` tables and the `m09-photos` bucket; `HOST_PIN` is the same PIN as the movie show) · 100-guest rehearsal against the live site passed.
+
+**Next:** organiser's review at `/host/portraits` · real inside jokes in `src/data/residents.ts` taglines · keeper's voice (pick one of `docs/voice-samples`, then the 37 lines at `/host/script`) · full rehearsal on the real projector with a mid-range Android + iPhone (mic permission prompt, the tear on a real thumb, haptics).
 
 ## Open questions
 - Keep "Party People" ident as-is, or cut a Halloween version?

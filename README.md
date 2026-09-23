@@ -31,7 +31,9 @@ npm run dev
 
 ## Deploy to Vercel
 
-Vercel functions share no memory or disk, so the deployed app must use the Supabase store (it switches on automatically in production when the credentials are present). This project can share the Supabase project the movie show used: every object here is prefixed `m09_` (tables, functions) or `m09-` (bucket), so nothing collides with `s09_`.
+Live: **https://manor-09-haunting.vercel.app** (Vercel project `manor-09-haunting`; pushes to `main` deploy). The steps below are already done for it and are kept for the next show.
+
+Vercel functions share no memory or disk, so the deployed app must use the Supabase store (it switches on automatically in production when the credentials are present). This project shares the Supabase project the movie show used: every object here is prefixed `m09_` (tables, functions) or `m09-` (bucket), so nothing collides with `s09_`.
 
 1. `vercel link` (new project) then `vercel env pull .env.local`, or connect the Supabase integration in the Vercel dashboard.
 2. `node scripts/setup-supabase.mjs` — runs [supabase/schema.sql](supabase/schema.sql) and creates the private `m09-photos` bucket. Safe to re-run; `--wipe` clears show data.
