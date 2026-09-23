@@ -18,7 +18,7 @@ type Live = Whisper & { kind: "emoji" | "text"; x: number };
  * bottom-left. History is never replayed after a refresh; it is all in the
  * guest book anyway.
  */
-export function Reactions({ whispers }: { whispers: Whisper[] }) {
+export function Reactions({ whispers, max = 3 }: { whispers: Whisper[]; max?: number }) {
   const seen = useRef<Set<string> | null>(null);
   const [live, setLive] = useState<Live[]>([]);
 
@@ -44,7 +44,7 @@ export function Reactions({ whispers }: { whispers: Whisper[] }) {
     );
   }, [whispers]);
 
-  const toasts = live.filter((w) => w.kind === "text").slice(-3);
+  const toasts = live.filter((w) => w.kind === "text").slice(-max);
   return (
     <div className="live" aria-live="polite">
       {live

@@ -76,7 +76,8 @@
 /* ---------------------------------------------------------------- gates */
 .gates { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 100%, #1a1226, var(--night) 60%); }
 .gates-left { position: absolute; left: 96px; top: 96px; width: 800px; z-index: 6; }
-.gates-right { position: absolute; right: 96px; top: 72px; width: 860px; z-index: 6; }
+/* the right column has to fit head + manor + arrival inside 1080px: every size below is budgeted for that */
+.gates-right { position: absolute; right: 96px; top: 60px; width: 800px; z-index: 6; }
 .gates-frame { padding: 40px 36px 44px; }
 .gates-frame h1 { font-size: 150px; white-space: nowrap; }
 .gates-frame h1 span { font-size: 0.26em; letter-spacing: 0.18em; white-space: nowrap; }
@@ -103,10 +104,10 @@
   color: var(--pumpkin);
   font-weight: 600;
 }
-.house-head b { font-size: 72px; font-weight: 800; color: var(--ink); letter-spacing: 0.02em; line-height: 1; }
-.house-head small { font-size: 28px; color: var(--ink-soft); }
-.manor { position: relative; margin-top: 8px; width: 860px; filter: drop-shadow(0 30px 60px rgba(0, 0, 0, 0.7)); }
-.roofline { display: block; width: 100%; height: 170px; overflow: visible; }
+.house-head b { font-size: 64px; font-weight: 800; color: var(--ink); letter-spacing: 0.02em; line-height: 1; }
+.house-head small { font-size: 26px; color: var(--ink-soft); }
+.manor { position: relative; margin-top: 6px; width: 800px; filter: drop-shadow(0 30px 60px rgba(0, 0, 0, 0.7)); }
+.roofline { display: block; width: 100%; height: 100px; overflow: visible; }
 .roofline .roof { fill: #1b1426; stroke: #3d3052; stroke-width: 2; }
 .roofline .tower { fill: #221a30; }
 .roofline .chimney { fill: #2a2138; }
@@ -117,8 +118,9 @@
   position: relative;
   display: grid;
   grid-template-columns: repeat(15, 1fr);
-  gap: 15px 12px;
-  padding: 24px 30px 76px;
+  gap: 8px 10px;
+  /* the bottom band is the ground floor: the door and lanterns live there, under the last row of windows */
+  padding: 18px 26px 104px;
   margin-top: -2px;
   background: linear-gradient(180deg, #241b32, #160f21);
   border: 2px solid #3d3052;
@@ -132,7 +134,7 @@
 .win {
   position: relative;
   z-index: 1;
-  aspect-ratio: 0.72;
+  aspect-ratio: 0.8;
   border-radius: 50% 50% 4px 4px / 42% 42% 4px 4px;
   background: #0b0812;
   box-shadow: inset 0 0 0 3px #2c2340, inset 0 0 12px rgba(0, 0, 0, 0.8);
@@ -177,33 +179,79 @@
 .manor-door {
   position: absolute;
   left: 50%;
-  bottom: 12px;
-  width: 64px;
-  height: 84px;
-  margin-left: -32px;
-  border-radius: 32px 32px 4px 4px;
+  bottom: 14px;
+  width: 84px;
+  height: 86px;
+  margin-left: -42px;
+  border-radius: 42px 42px 3px 3px;
   background: linear-gradient(180deg, #4a2a18, #2a160c);
-  box-shadow: inset 0 0 0 3px #6b4a2c, 0 0 30px rgba(255, 140, 40, 0.35);
+  box-shadow: inset 0 0 0 4px #6b4a2c, inset 0 0 0 6px #1d0f07, 0 0 36px rgba(255, 140, 40, 0.5);
 }
-.manor-door::after { content: ""; position: absolute; left: 50%; top: 46%; width: 8px; height: 8px; margin-left: 12px; border-radius: 50%; background: var(--gilt); }
-.manor-steps { position: absolute; left: 50%; bottom: -6px; width: 160px; height: 12px; margin-left: -80px; background: #2a2138; border-radius: 4px; box-shadow: 0 8px 0 -2px #221a30, 0 16px 0 -4px #1b1426; }
+/* the fanlight over the doors, lit from inside */
+.manor-door::before {
+  content: "";
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  top: 8px;
+  height: 24px;
+  border-radius: 32px 32px 2px 2px;
+  background: radial-gradient(ellipse at 50% 100%, #fff0b8, var(--pumpkin) 55%, #b3460a);
+  box-shadow: 0 0 14px rgba(255, 140, 40, 0.7);
+  animation: window-flicker 2.4s ease-in-out infinite;
+}
+/* the split between the two leaves, with a knob on each */
+.manor-door::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 38px;
+  bottom: 6px;
+  width: 3px;
+  margin-left: -1.5px;
+  background: #1d0f07;
+  box-shadow: -12px 20px 0 1px var(--gilt), 12px 20px 0 1px var(--gilt);
+}
+.manor-lamp {
+  position: absolute;
+  bottom: 74px;
+  width: 14px;
+  height: 20px;
+  border-radius: 3px 3px 5px 5px;
+  background: radial-gradient(ellipse at 50% 60%, #fff0b8, var(--candle) 50%, #b3460a);
+  box-shadow: 0 0 16px rgba(245, 199, 106, 0.85), 0 0 44px rgba(255, 140, 40, 0.35);
+  animation: window-flicker 1.9s ease-in-out infinite;
+}
+.manor-lamp.l { left: calc(50% - 78px); }
+.manor-lamp.r { right: calc(50% - 78px); animation-delay: -0.7s; }
+.manor-steps {
+  position: absolute;
+  left: 50%;
+  bottom: -6px;
+  width: 200px;
+  height: 10px;
+  margin-left: -100px;
+  border-radius: 3px;
+  background: #2f2640;
+  box-shadow: 0 8px 0 -1px #281f36, 0 16px 0 -2px #221a30, 0 -18px 40px rgba(255, 140, 40, 0.16);
+}
 .just-arrived {
-  margin-top: 34px;
-  min-height: 150px;
+  margin-top: 16px;
+  min-height: 110px;
   border-left: 6px solid var(--pumpkin);
-  padding-left: 26px;
+  padding-left: 22px;
   animation: arrived-in 0.6s cubic-bezier(0.2, 0.9, 0.3, 1) both;
 }
 @keyframes arrived-in {
   from { opacity: 0; transform: translateX(40px); }
 }
-.just-arrived span { display: block; font-family: var(--display); text-transform: uppercase; letter-spacing: 0.2em; font-size: 22px; color: var(--pumpkin); font-weight: 600; }
-.just-arrived b { display: block; font-family: var(--display); text-transform: uppercase; font-weight: 800; font-size: 72px; line-height: 1; color: var(--ink); }
-.just-arrived em { font-size: 30px; color: var(--candle); }
-.spirits { margin-top: 36px; display: flex; gap: 18px; height: 170px; }
+.just-arrived span { display: block; font-family: var(--display); text-transform: uppercase; letter-spacing: 0.2em; font-size: 20px; color: var(--pumpkin); font-weight: 600; }
+.just-arrived b { display: block; font-family: var(--display); text-transform: uppercase; font-weight: 800; font-size: 58px; line-height: 1; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.just-arrived em { font-size: 26px; color: var(--candle); }
+.spirits { margin-top: 30px; display: flex; gap: 18px; height: 140px; }
 .spirits img {
-  height: 170px;
-  width: 150px;
+  height: 140px;
+  width: 124px;
   object-fit: cover;
   border: 8px solid #e7dcc3;
   border-bottom-width: 26px;
@@ -215,11 +263,11 @@
   18% { opacity: 1; }
   100% { filter: none; transform: none; }
 }
-/* the trick-or-treaters wander along the bottom edge, small and slow */
-.gates-stroll { position: absolute; left: 0; bottom: -92px; transform-origin: 0 100%; animation: stroll 38s linear infinite; pointer-events: none; z-index: 5; }
+/* the trick-or-treaters wander along the bottom edge, small and slow, feet on the floor */
+.gates-stroll { position: absolute; left: 0; bottom: 0; transform-origin: 0 100%; animation: stroll 38s linear infinite; pointer-events: none; z-index: 5; }
 @keyframes stroll {
-  from { transform: translateX(-560px) scale(0.36); }
-  to { transform: translateX(1980px) scale(0.36); }
+  from { transform: translateX(-420px) scale(0.26); }
+  to { transform: translateX(1980px) scale(0.26); }
 }
 
 /* ---------------------------------------------------------------- storm */
@@ -747,8 +795,8 @@
 /* ---------- live reactions: guest whispers over whatever is playing ---------- */
 .live { position: absolute; inset: 0; pointer-events: none; z-index: 5; overflow: hidden; }
 .live-toasts { position: absolute; left: 48px; bottom: 72px; display: grid; gap: 14px; width: 760px; }
-/* while the gates are open the QR lives bottom-left, so whispers sit at the foot of the manor instead */
-.stage.on-gates .live-toasts { left: auto; right: 96px; bottom: 30px; width: 640px; z-index: 6; }
+/* while the gates are open the arrival panel owns the bottom right, so whispers sit under the QR instead */
+.stage.on-gates .live-toasts { left: 96px; bottom: 110px; width: 800px; z-index: 6; }
 .whisper-card {
   padding: 18px 28px 20px;
   border-radius: 14px;
@@ -842,28 +890,81 @@
 @keyframes hover-ghost {
   50% { transform: translateY(-44px) rotate(3deg); }
 }
+/* the wrapper marches; the character inside does its own party trick now and then */
 .walker-svg { display: block; overflow: visible; }
-.pumpkin { width: 300px; }
-.ghost { width: 240px; }
-.cat { width: 360px; }
+.pumpkin { width: 300px; transform-origin: 50% 90%; animation: pumpkin-spin 7s 2s cubic-bezier(0.5, -0.2, 0.3, 1.25) infinite; }
+.ghost { width: 240px; transform-origin: 50% 80%; animation: ghost-boo 8s 1s ease-in-out infinite; }
+.cat { width: 360px; transform-origin: 50% 100%; animation: cat-arch 9s 3s ease-in-out infinite; }
+/* the pumpkin hops into a full spin and lands like nothing happened */
+@keyframes pumpkin-spin {
+  0%, 80% { transform: rotate(0) translateY(0); }
+  86% { transform: rotate(-180deg) translateY(-70px); }
+  92%, 100% { transform: rotate(-360deg) translateY(0); }
+}
+/* the ghost fades out mid-stroll, then jumps back in with a BOO */
+@keyframes ghost-boo {
+  0%, 60% { transform: scale(1); opacity: 1; }
+  66%, 72% { transform: scale(0.6); opacity: 0; }
+  76% { transform: scale(1.45) rotate(-6deg); opacity: 1; }
+  82% { transform: scale(0.95) rotate(4deg); }
+  88%, 100% { transform: scale(1); }
+}
+/* the cat arches its back and hisses */
+@keyframes cat-arch {
+  0%, 70%, 100% { transform: scale(1, 1); }
+  74% { transform: scale(0.92, 1.18) translateY(-10px); }
+  78% { transform: scale(1.06, 0.94); }
+  82% { transform: scale(0.96, 1.1) rotate(-3deg); }
+  86% { transform: scale(1); }
+}
 .pumpkin .body { fill: #ff7a1a; }
 .pumpkin .ridge { fill: none; stroke: #c9520c; stroke-width: 6; opacity: 0.7; }
-.pumpkin .stem { fill: #5b8a3c; }
+.pumpkin .stem { fill: #5b8a3c; transform-box: fill-box; transform-origin: 50% 100%; animation: stem-wiggle 3s ease-in-out infinite; }
+@keyframes stem-wiggle {
+  0%, 60%, 100% { transform: rotate(0); }
+  70% { transform: rotate(-16deg); }
+  80% { transform: rotate(14deg); }
+  90% { transform: rotate(-8deg); }
+}
 .pumpkin .face path { fill: #ffe08a; filter: drop-shadow(0 0 8px #ffb02e); }
-.pumpkin .face { animation: glow-face 1.6s ease-in-out infinite; }
+/* the candle inside gutters, and flares when it spins */
+.pumpkin .face { transform-box: fill-box; transform-origin: 50% 50%; animation: glow-face 1.6s ease-in-out infinite, face-flare 7s 2s infinite; }
 @keyframes glow-face {
   50% { opacity: 0.6; }
+}
+@keyframes face-flare {
+  0%, 78%, 96%, 100% { transform: scale(1); }
+  84% { transform: scale(1.25); }
+  90% { transform: scale(0.9); }
 }
 .pumpkin .leg rect,
 .pumpkin .leg ellipse { fill: #1c120e; }
 .ghost .sheet { fill: #efe6d0; filter: drop-shadow(0 0 18px rgba(239, 230, 208, 0.45)); }
-.ghost .face ellipse { fill: #1a1226; }
-.ghost .arm { fill: none; stroke: #efe6d0; stroke-width: 16; stroke-linecap: round; }
-.cat .body,
-.cat .head,
-.cat .ear,
-.cat .leg rect { fill: #1e1730; stroke: #6a5c8a; stroke-width: 3; }
-.cat .tail { fill: none; stroke: #1e1730; stroke-width: 16; stroke-linecap: round; transform-box: fill-box; transform-origin: 0 100%; animation: swish 1.4s ease-in-out infinite alternate; filter: drop-shadow(0 0 2px #6a5c8a); }
+.ghost .face ellipse { fill: #1a1226; transform-box: fill-box; transform-origin: 50% 50%; }
+.ghost .face ellipse:nth-child(-n + 2) { animation: cat-blink 5s 1.7s infinite; }
+.ghost .face ellipse:nth-child(3) { animation: mouth-boo 8s 1s infinite; }
+@keyframes mouth-boo {
+  0%, 70%, 90%, 100% { transform: scale(1); }
+  76% { transform: scale(1.8, 2.2); }
+}
+.ghost .arm { fill: none; stroke: #efe6d0; stroke-width: 16; stroke-linecap: round; transform-box: fill-box; animation: wave 0.8s ease-in-out infinite alternate; }
+.ghost .arm.l { transform-origin: 100% 0; }
+.ghost .arm.r { transform-origin: 0 0; animation-delay: -0.8s; }
+@keyframes wave {
+  from { transform: rotate(-16deg); }
+  to { transform: rotate(16deg); }
+}
+/* one silhouette with a soft bone rim, so the cat reads on a dark stage without outlines */
+.cat .silhouette { fill: #1a1428; filter: drop-shadow(0 0 3px rgba(239, 230, 208, 0.5)) drop-shadow(0 0 14px rgba(138, 92, 214, 0.35)); }
+.cat .head { transform-box: fill-box; transform-origin: 50% 100%; animation: ear-twitch 4s infinite; }
+@keyframes ear-twitch {
+  0%, 88%, 100% { transform: rotate(0); }
+  91% { transform: rotate(-6deg); }
+  94% { transform: rotate(5deg); }
+  97% { transform: rotate(-2deg); }
+}
+.cat .tail { fill: none; stroke: #1a1428; stroke-width: 16; stroke-linecap: round; transform-box: fill-box; transform-origin: 0 100%; animation: swish 1.4s ease-in-out infinite alternate; }
+.cat .nose { fill: #b8191f; }
 @keyframes swish {
   from { transform: rotate(-10deg); }
   to { transform: rotate(14deg); }
@@ -886,8 +987,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .grain, .tv-static, .moon .cloud, .candle .flame, .candle .glow, .win.lit, .gates-stroll, .walker, .walker .leg, .cat .tail, .cat .eyes ellipse, .candies i, .candy-sub, .bat, .bat .wing, .sec-hand { animation: none; }
-  .gates-stroll { transform: translateX(96px) scale(0.36); }
+  .grain, .tv-static, .moon .cloud, .candle .flame, .candle .glow, .win.lit, .gates-stroll, .walker, .walker-svg, .walker .leg, .cat .tail, .cat .head, .cat .eyes ellipse, .ghost .arm, .ghost .face ellipse, .pumpkin .stem, .pumpkin .face, .candies i, .candy-sub, .bat, .bat .wing, .sec-hand, .manor-lamp, .manor-door::before { animation: none; }
+  .gates-stroll { transform: translateX(96px) scale(0.26); }
   .candies i { opacity: 0; }
   .canvas img, .canvas video, .varnish, .ambient { animation: none; }
   .ambient { opacity: 1; }

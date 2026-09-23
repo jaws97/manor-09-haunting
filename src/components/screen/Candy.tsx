@@ -124,28 +124,34 @@ export function Parade() {
       </div>
 
       <div className="walker cat-wrap">
+        {/* a black cat in profile, back arched, head turned to the room; one silhouette so the parts don't show */}
         <svg className="walker-svg cat" viewBox="0 0 340 260">
-          <g className="leg l">
-            <rect x="92" y="180" width="18" height="60" rx="9" />
+          {/* drawn head-left; mirrored so it walks the way the parade goes */}
+          <g transform="matrix(-1 0 0 1 340 0)">
+          <g className="silhouette">
+            <g className="leg l">
+              <path d="M98 168 q-12 40 -5 72 h22 q-2 -36 7 -72z" />
+            </g>
+            <g className="leg r">
+              <path d="M128 172 q-12 38 -5 68 h22 q-2 -34 7 -68z" />
+            </g>
+            <g className="leg l back">
+              <path d="M228 166 q-14 40 -6 74 h24 q-2 -38 8 -74z" />
+            </g>
+            <g className="leg r back">
+              <path d="M258 168 q-14 38 -6 72 h24 q-2 -36 8 -72z" />
+            </g>
+            <path className="tail" d="M282 128 C332 122, 346 66, 302 40" />
+            <path className="body" d="M84 130 C108 86, 190 68, 242 92 C286 112, 294 152, 272 180 C244 202, 132 204, 102 184 C80 170, 76 148, 84 130Z" />
+            <path className="head" d="M54 98 L44 44 L84 78 C98 72, 114 72, 126 80 L152 48 L146 102 C156 120, 152 142, 136 156 C112 172, 70 170, 54 150 C40 136, 40 114, 54 98Z" />
           </g>
-          <g className="leg r">
-            <rect x="126" y="180" width="18" height="60" rx="9" />
-          </g>
-          <g className="leg l back">
-            <rect x="222" y="180" width="18" height="60" rx="9" />
-          </g>
-          <g className="leg r back">
-            <rect x="256" y="180" width="18" height="60" rx="9" />
-          </g>
-          <path className="tail" d="M280 150 C330 140, 340 90, 300 60" />
-          <ellipse className="body" cx="180" cy="150" rx="110" ry="58" />
-          <circle className="head" cx="88" cy="110" r="52" />
-          <path className="ear" d="M50 80 l-8 -46 l40 26z M126 80 l8 -46 l-40 26z" />
           <g className="eyes">
-            <ellipse cx="70" cy="106" rx="9" ry="12" />
-            <ellipse cx="106" cy="106" rx="9" ry="12" />
+            <ellipse cx="82" cy="116" rx="8" ry="11" />
+            <ellipse cx="118" cy="116" rx="8" ry="11" />
           </g>
-          <path className="whisker" d="M40 122 l-30 -4 M40 130 l-30 6 M136 122 l30 -4 M136 130 l30 6" />
+          <path className="nose" d="M94 134 h12 l-6 8z" />
+          <path className="whisker" d="M40 130 l-30 -6 M40 138 l-30 4 M160 130 l30 -6 M160 138 l30 4" />
+          </g>
         </svg>
       </div>
     </div>

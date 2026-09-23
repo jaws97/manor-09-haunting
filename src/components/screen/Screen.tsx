@@ -104,7 +104,8 @@ export function Screen() {
           {state.candy ? "Candy break" : PHASE_LABEL[state.phase]}
           {!online && " · reconnecting…"}
         </div>
-        {ready && <Reactions whispers={state.whispers} />}
+        {/* the gates screen is the busiest: two whisper cards there, three elsewhere */}
+        {ready && <Reactions whispers={state.whispers} max={state.phase === "gates" ? 2 : 3} />}
       </div>
     </div>
   );

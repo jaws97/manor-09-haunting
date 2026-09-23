@@ -27,7 +27,7 @@ export function Gates({ arrived, photos }: { arrived: Arrived[]; photos: string[
 
   return (
     <div className="gates">
-      <Moon x={55} y={3} size={190} />
+      <Moon x={63} y={2} size={190} />
       <Fog density={1.1} />
       <Bats every={18} />
       <Lightning every={45} />
@@ -114,7 +114,10 @@ export function Manor({ taken, latest }: { taken: Map<number, Arrived>; latest?:
           return <i key={i} className={`win${g ? " lit" : ""}${g?.cast ? " cast" : ""}${fresh ? " fresh" : ""}`} />;
         })}
       </div>
+      {/* the front door: two leaves under a lit fanlight, a lantern either side, three steps down */}
+      <i className="manor-lamp l" />
       <div className="manor-door" />
+      <i className="manor-lamp r" />
       <div className="manor-steps" />
     </div>
   );
@@ -122,7 +125,7 @@ export function Manor({ taken, latest }: { taken: Map<number, Arrived>; latest?:
 
 /** Latest spirit photographs, pinned up like the evidence they are. */
 function SpiritPhotos({ photos }: { photos: string[] }) {
-  const latest = photos.slice(-4);
+  const latest = photos.slice(-3);
   if (!latest.length) return null;
   return (
     <div className="spirits">
