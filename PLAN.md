@@ -17,9 +17,9 @@ Every September birthday is a resident of Manor 09, with a creature title (Avira
 
 ## Run of show (`phase` = one DB row, broadcast to all screens)
 1. **gates** — the manor façade: 120 windows, one per room; each broken seal lights one (residents' rooms glow gold on the top floors); giant QR; "Just arrived · Room 047 · East Wing"; spirit-photo strip; trick-or-treaters strolling the bottom edge; moon, fog, bats, the odd lightning strike
-2. **storm** — house lights down, wind, a strike shows the manor for the first time, the iron gates creak open, the camera pushes in through the door; runs on automatically
-3. **midnight** — the tower clock's last five strokes, a toll each; on twelve, lightning and bats; runs on
-4. **ident** — the team's own "Party People" ident film through a burst of TV static; runs on
+2. **ident** — first, like a production company card before a film: the team’s "Party People" ident, haunted cut: the letters as weathered stone on the manor lawn, three hooded figures, a black candle whose flame turns green, lightning, bats, to black (8s, `public/media/ident.mp4`), through a burst of TV static; runs on
+3. **storm** — house lights down, wind, a strike shows the manor for the first time, the iron gates creak open, the camera pushes in through the door; runs on automatically
+4. **midnight** — the tower clock's last five strokes, a toll each; on twelve, lightning and bats; runs on
 5. **title** — "Manor 09 presents · The Haunting" with organ + keeper; waits for the host
 6. **seance** — the spirit board: the keeper asks for a sign, the planchette spells S-E-P-T-E-M-B-E-R, then 27, then slides to YES as the candles gutter; waits for the host
 7. **gallery** — 27 × ~25s: three knocks on the door of their room → the door creaks open on a dust-sheeted gilt frame → lightning, the sheet whips off → the portrait lives (breathing, varnish, sheen) → title, plaque line, "Known by day as…", keeper reads it
@@ -31,7 +31,7 @@ Candy break (`c`): a trick-or-treat snipe over any phase — pumpkin, ghost and 
 ## Wow factors (ranked, in scope)
 1. The manor lighting up window by window as seals break at the gate
 2. Press-and-hold to break a wax seal: cracks that draw in one by one with haptic ticks, heals if let go, shatters into shards, the flap lifts, the letter rises, a bat escapes
-3. The storm → midnight → ident opening as one piece, with sound
+3. The ident → storm → midnight opening as one piece, with sound
 4. 27 no-face portraits in gilt frames, each revealed with knocks, a creaking door and lightning
 5. The séance: a planchette that actually spells, with whispers
 6. A room-wide scream measured by phone microphones (tap fallback), pinning a meter until the manor trembles
@@ -50,7 +50,7 @@ Principles carried over from Studio 09: local-first interactions (the seal alway
 Projector + speakers, dim not blackout → cream/parchment on near-black, candle-orange and ectoplasm-green accents, heavy type weights, grain and vignette kept light. Fixed 1920×1080 stage scaled to fit; 5% safe margins. Sound is fully in scope; `/host` has mute.
 
 ## Art pipeline
-27 portraits + 4 backdrops (manor exterior, gatehouse, gallery corridor, séance room) generated with `nano_banana_pro` at 2k (2 credits each, 62 credits total). Prompts: original scenes, the figure always seen from behind / hooded / silhouetted (no faces, so nobody needs to send a photo), no text, lower third kept dark for the HTML title. Two prompts were rejected by the generator's filter (#20) and re-written more gently. `scripts/fetch-generated.mjs` pulls results in; `scripts/portrait-assets.mjs` derives thumbs, blurred room backdrops and accent colours.
+27 portraits + 4 backdrops (manor exterior, gatehouse, gallery corridor, séance room) generated with `nano_banana_pro` at 2k (2 credits each, 62 credits total). Prompts: original scenes, the figure always seen from behind / hooded / silhouetted (no faces, so nobody needs to send a photo), no text, lower third kept dark for the HTML title. Two prompts were rejected by the generator’s filter (#20) and re-written more gently. The ident is one `nano_banana_pro` still of the stone letters (16:9, 2k) animated with `seedance_2_5` (8s, 1080p, native audio: wind, thunder, bats, a bell) — 2 + 96 credits — then transcoded to H.264 for the projector browser; `public/media/ident.webp` is its poster frame. `scripts/fetch-generated.mjs` pulls results in; `scripts/portrait-assets.mjs` derives thumbs, blurred room backdrops and accent colours.
 
 Photo tiers from the movie plan still apply if real likenesses are wanted later (A: face-forward stylised portrait from one photo; B: soft likeness; C: no face, what everyone has now).
 
@@ -59,8 +59,9 @@ Photo tiers from the movie plan still apply if real likenesses are wanted later 
 
 **Also built (Sep 23, evening):** the invitation rebuilt around a drag-to-tear (letter-slot delivery, fibre ticks, the wax snapping as the tear passes, the strip flying off) on black gothic stationery · all 27 portraits in · **live on Vercel: https://manor-09-haunting.vercel.app** (project `manor-09-haunting`, Supabase store on the shared `funfriday-db` project with `m09_` tables and the `m09-photos` bucket; `HOST_PIN` is set on the Vercel project as a sensitive variable, so it cannot be read back — the organiser has it) · 100-guest rehearsal against the live site passed.
 
-**Next:** organiser's review at `/host/portraits` · real inside jokes in `src/data/residents.ts` taglines · keeper's voice (pick one of `docs/voice-samples`, then the 37 lines at `/host/script`) · full rehearsal on the real projector with a mid-range Android + iPhone (mic permission prompt, the tear on a real thumb, haptics).
+**Also built (Sep 23, night):** the haunted ident cut replaces the movie show’s birthday ident, which read as an ad break between the midnight strike and the title card; the ident now opens the show, cinema-style, and the storm → midnight → title build runs uninterrupted.
+
+**Next:** organiser’s review at `/host/portraits` · real inside jokes in `src/data/residents.ts` taglines · keeper's voice (pick one of `docs/voice-samples`, then the 37 lines at `/host/script`) · full rehearsal on the real projector with a mid-range Android + iPhone (mic permission prompt, the tear on a real thumb, haptics).
 
 ## Open questions
-- Keep "Party People" ident as-is, or cut a Halloween version?
 - Which residents want a real-likeness (tier A) portrait? Photo deadline would be Sep 30.

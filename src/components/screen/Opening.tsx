@@ -139,7 +139,7 @@ export function Midnight({ onDone }: { onDone: () => void }) {
 
 /* ------------------------------------------------------------------ ident */
 
-/** The team's ident film (public/media/ident.mp4), on a haunted television. If it can't play, the title card stands in. */
+/** The team's ident film, haunted cut (public/media/ident.mp4, 8s, with sound), on a haunted television. If it can't play, the title card stands in. */
 export function Ident({ muted, onDone }: { muted: boolean; onDone: () => void }) {
   const [failed, setFailed] = useState(false);
   const [noise, setNoise] = useState(true);
@@ -175,6 +175,7 @@ export function Ident({ muted, onDone }: { muted: boolean; onDone: () => void })
           ref={video}
           className="ident-video"
           src="/media/ident.mp4"
+          poster="/media/ident.webp"
           playsInline
           preload="auto"
           onEnded={ended}

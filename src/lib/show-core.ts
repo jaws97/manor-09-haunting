@@ -1,15 +1,16 @@
 /** Show state shared by server and client. No secrets in here: it is served publicly. */
 
 /**
- * Run of show. Once the host leaves the gates the opening plays as one piece:
- * the storm breaks over the manor, the clock strikes midnight, the team ident
- * plays, and the title card waits for the host.
+ * Run of show. Once the host leaves the gates the opening plays as one piece,
+ * cinema-style: the team ident first, like a production company card, then the
+ * storm breaks over the manor, the clock strikes midnight, and the title card
+ * waits for the host.
  */
 export const PHASES = [
   "gates",
+  "ident",
   "storm",
   "midnight",
-  "ident",
   "title",
   "seance",
   "gallery",
