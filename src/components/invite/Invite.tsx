@@ -1,5 +1,6 @@
 "use client";
 
+import { animate, motion, useMotionValue, useMotionValueEvent, useTransform } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { post, saveInvite, syncEnter, useInvite, type InviteData } from "@/lib/invite";
 import {
@@ -7,19 +8,33 @@ import {
   buzz,
   crackTick,
   flutter,
-  quill,
+  paperStep,
+  ripFinish,
+  ripTick,
   rustle,
-  sealBreak,
+  sealSnap,
+  slotClack,
   stamp,
   unlockSeal,
 } from "@/lib/seal";
 import { floorOf, roomLabel, wingOf } from "@/lib/show-core";
 
+/** distance between tear ticks in CSS px */
+const PITCH = 14;
+/** the wax sits halfway along the seam; tearing through it is what commits the tear */
+const SEAL_AT = 0.5;
+const COMMIT_AT = SEAL_AT;
+/** the wax starts crazing this far before the tear reaches it */
+const CRAZE_FROM = 0.26;
+const CRACKS = 8;
+
 const pad2 = (n: number) => String(n).padStart(2, "0");
+const reduced = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export function InvitePage({ cast }: { cast: string[] }) {
   const invite = useInvite();
-  // true only for an invitation written on this page load: the quill writes it and the wax comes down.
+  // true only for an invitation summoned on this page load: it comes in through the letter slot.
   // A reloaded invitation is already in the guest's hand, so it just appears.
   const [fresh, setFresh] = useState(false);
   useEffect(() => armSealOnFirstTouch(), []);
@@ -49,7 +64,7 @@ function Gatehouse({ cast, onIssued }: { cast: string[]; onIssued: () => void })
   const issue = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!ok) return;
-    unlockSeal(); // this tap is the gesture that lets the quill and the wax make a sound
+    unlockSeal(); // this tap is the gesture that lets the letter slot make a sound
     setState("busy");
     try {
       const res = await post("/api/invite", { name });
@@ -73,9 +88,9 @@ function Gatehouse({ cast, onIssued }: { cast: string[]; onIssued: () => void })
       {/* the invitation fills itself in as the guest types */}
       <div className={`gh-preview${isCast ? " cast" : ""}${typed ? " live" : ""}`} aria-hidden="true">
         <div>
-          <small>The manor admits</small>
+          <small>By candlelight, to</small>
           <b className="script">{typed || "your name"}</b>
-          <em>{isCast ? "☾ A resident of the manor" : "One night · 7 October"}</em>
+          <em>{isCast ? "☾ A resident of the manor" : "Manor 09 · 7 October · one night"}</em>
         </div>
         <div className="gh-preview-room">
           <small>Room</small>
@@ -100,19 +115,19 @@ function Gatehouse({ cast, onIssued }: { cast: string[]; onIssued: () => void })
           ))}
         </datalist>
         <button type="submit" disabled={!ok}>
-          {state === "busy" ? "Writing…" : "Write my invitation"}
+          {state === "busy" ? "Summoning…" : "Summon my invitation"}
         </button>
-        {state === "failed" && <p role="alert">The gatekeeper dropped the quill. Try once more.</p>}
+        {state === "failed" && <p role="alert">Nothing came through the slot. Try once more.</p>}
       </form>
 
       <ol className="gh-steps">
         <li>
-          <b>Your invitation is written</b>
-          <span>A room is chosen for you. The manor does not take requests.</span>
+          <b>Your invitation arrives</b>
+          <span>It slides in through the letter slot, sealed in wax. A room is chosen for you; the manor does not take requests.</span>
         </li>
         <li>
           <b>Show it at the gate</b>
-          <span>The gatekeeper presses the wax seal until it cracks. Sound on, it&apos;s satisfying.</span>
+          <span>The gatekeeper tears it open along the top, straight through the wax. Sound on, it&apos;s satisfying.</span>
         </li>
         <li>
           <b>You&apos;re in</b>
@@ -124,142 +139,189 @@ function Gatehouse({ cast, onIssued }: { cast: string[]; onIssued: () => void })
   );
 }
 
-/* ------------------------------------------------------------- invitation */
+/* ------------------------------------------------------------- letterbox */
 
-type Stage = "writing" | "sealing" | "sealed" | "broken";
-/** how long a thumb has to stay on the wax */
-const HOLD_MS = 1300;
-const CRACKS = 8;
+const FEED_STEPS = 14;
 
 /**
- * The invitation as a sealed envelope. Fresh ones are written in front of the
- * guest (the quill scratches, the wax drops). At the gate, the gatekeeper
- * presses and holds the seal: it cracks a little more the longer it is held,
- * heals if it is let go early, and finally shatters — the flap lifts, the
- * letter with the room slides out, and a bat leaves in a hurry.
+ * The envelope coming in through the letter slot: the brass flap opens, the
+ * paper is pushed through in nudges (a scrape and a buzz each), it drops with
+ * a bounce as the flap clacks shut, and then the wax comes down on it.
+ */
+function usePostbox(deliver: boolean) {
+  const [stage, setStage] = useState<"feed" | "drop" | "wax" | "done">(deliver ? "feed" : "done");
+  const feed = useMotionValue(deliver ? 0 : 1);
+  const drop = useMotionValue(0);
+  const y = useTransform(() => `calc(${((feed.get() - 1) * 100).toFixed(2)}% + ${drop.get().toFixed(1)}px)`);
+
+  // Runs once on mount (motion values are stable). Strict mode runs it twice in dev: the first run is
+  // cancelled by its cleanup before it moves anything. Stage changes must NOT re-run it.
+  useEffect(() => {
+    if (feed.get() === 1) return; // nothing to deliver
+    let dead = false;
+    (async () => {
+      if (reduced()) {
+        feed.set(1);
+        return setStage("done");
+      }
+      scrollTo({ top: 0, behavior: "smooth" });
+      await wait(450); // the flap creaks open first
+      for (let i = 1; i <= FEED_STEPS && !dead; i++) {
+        paperStep();
+        buzz(6);
+        await animate(feed, i / FEED_STEPS, { duration: 0.07, ease: "easeOut" });
+        await wait(35 + Math.random() * 55);
+      }
+      if (dead) return;
+      setStage("drop");
+      slotClack();
+      buzz([12, 20, 12]);
+      await Promise.all([animate(drop, 10, { type: "spring", stiffness: 360, damping: 13 }), wait(520)]);
+      if (dead) return;
+      setStage("wax");
+      await wait(520); // the wax is in the air
+      if (dead) return;
+      stamp();
+      buzz([30, 20, 40]);
+      await wait(420);
+      if (!dead) setStage("done");
+    })();
+    return () => {
+      dead = true;
+    };
+  }, [feed, drop]);
+
+  return { stage, y };
+}
+
+/* ------------------------------------------------------------- invitation */
+
+/**
+ * The invitation as a wax-sealed envelope. At the gate, the gatekeeper tears
+ * along the top, from the left: every fibre ticks under the thumb, the wax
+ * crazes as the tear gets near and snaps in two as it passes, the torn strip
+ * flies off, the letter with the room slides out, and something that was
+ * living in there leaves in a hurry. Let go before the wax and the paper
+ * springs back whole.
  */
 function Invitation({ invite, fresh }: { invite: InviteData; fresh: boolean }) {
-  const entered = invite.enteredAt != null;
-  // with reduced motion there is no writing or wax-drop sequence: the sealed envelope just appears
-  const [stage, setStage] = useState<Stage>(() =>
-    entered
-      ? "broken"
-      : fresh && !matchMedia("(prefers-reduced-motion: reduce)").matches
-        ? "writing"
-        : "sealed",
-  );
-  const [cracks, setCracks] = useState(0);
-  const [hint, setHint] = useState(true);
-  const holding = useRef(false);
-  const raf = useRef(0);
-  const p = useRef(0);
+  const torn = invite.enteredAt != null;
+  const postbox = usePostbox(fresh && !torn);
+  const ready = postbox.stage === "done";
+  const progress = useMotionValue(torn ? 1 : 0);
+  const seamRef = useRef<HTMLDivElement>(null);
+  const dragging = useRef(false);
+  const lastTick = useRef(0);
   const lastCrack = useRef(0);
-  const sealRef = useRef<HTMLButtonElement>(null);
+  const snapped = useRef(torn);
+  const ticks = useRef(22);
+  const [hint, setHint] = useState(true);
+  const [cracks, setCracks] = useState(torn ? CRACKS : 0);
+  const [open, setOpen] = useState(torn);
 
-  // the quill writes the name, then the wax comes down; each stage schedules the next
-  useEffect(() => {
-    if (stage === "writing") {
-      const scratches = setInterval(quill, 95);
-      const t1 = setTimeout(() => clearInterval(scratches), 1500);
-      const t2 = setTimeout(() => setStage("sealing"), 1700);
-      return () => {
-        clearInterval(scratches);
-        clearTimeout(t1);
-        clearTimeout(t2);
-      };
+  // Paper stays joined ahead of the tear, so the strip hinges AT the tear point: everything already
+  // torn lifts to the left of it, everything still attached stays stuck down to the right.
+  const stripRotate = useTransform(progress, [0, 1], [0, -9]);
+  const hinge = useTransform(progress, (p) => `${(p * 100).toFixed(1)}% 100%`);
+  const handleLeft = useTransform(progress, (p) => `${p * 100}%`);
+
+  // Flying away after the tear completes.
+  const flyY = useMotionValue(torn ? -900 : 0);
+  const flyRotate = useMotionValue(torn ? -28 : 0);
+  const flyOpacity = useMotionValue(torn ? 0 : 1);
+  const rotate = useTransform(() => stripRotate.get() + flyRotate.get());
+
+  useMotionValueEvent(progress, "change", (p) => {
+    if (!dragging.current) return;
+    const tick = Math.floor(p * ticks.current); // one tick and one buzz per fibre
+    if (tick > lastTick.current) {
+      lastTick.current = tick;
+      ripTick();
+      buzz(8);
     }
-    if (stage === "sealing") {
-      const t1 = setTimeout(() => {
-        stamp();
-        buzz([30, 20, 40]);
-      }, 520);
-      const t2 = setTimeout(() => setStage("sealed"), 1000);
-      return () => {
-        clearTimeout(t1);
-        clearTimeout(t2);
-      };
-    }
-  }, [stage]);
-
-  useEffect(() => () => cancelAnimationFrame(raf.current), []);
-
-  const setProgress = (v: number) => {
-    p.current = v;
-    sealRef.current?.style.setProperty("--p", v.toFixed(3));
-    const c = Math.min(CRACKS, Math.floor(v * (CRACKS + 1)));
-    if (c !== lastCrack.current) {
-      if (c > lastCrack.current) {
-        crackTick();
-        buzz(8);
-      }
+    // the wax crazes as the tear approaches it, then snaps when the tear goes through
+    const c = Math.max(0, Math.min(CRACKS, Math.floor(((p - CRAZE_FROM) / (SEAL_AT - CRAZE_FROM)) * (CRACKS + 1))));
+    if (c > lastCrack.current) {
       lastCrack.current = c;
+      crackTick();
       setCracks(c);
     }
-  };
+    if (p >= SEAL_AT && !snapped.current) {
+      snapped.current = true;
+      sealSnap();
+      buzz([20, 15, 40]);
+    }
+  });
 
   const complete = () => {
-    holding.current = false;
-    cancelAnimationFrame(raf.current);
-    setProgress(1);
-    setStage("broken");
-    sealBreak();
-    buzz([40, 30, 80]);
-    setTimeout(rustle, 350);
-    setTimeout(flutter, 900);
+    ripFinish();
+    buzz([30, 20, 60]);
+    animate(flyY, -900, { duration: 0.9, ease: [0.5, 0, 0.9, 0.6] });
+    animate(flyRotate, -28, { duration: 0.9, ease: "easeIn" });
+    animate(flyOpacity, 0, { duration: 0.35, delay: 0.55 });
+    setOpen(true);
+    setTimeout(rustle, 300);
+    setTimeout(flutter, 700);
     saveInvite({ ...invite, enteredAt: Date.now() });
     void syncEnter();
-    if (!matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    if (!reduced()) {
       import("canvas-confetti").then(({ default: confetti }) =>
         confetti({
-          particleCount: 90,
-          spread: 80,
-          startVelocity: 38,
-          origin: { x: 0.5, y: 0.5 },
-          colors: ["#ff7a1a", "#f5c76a", "#8a5cd6", "#efe6d0"],
+          particleCount: 110,
+          spread: 90,
+          startVelocity: 40,
+          origin: { x: 0.5, y: 0.45 },
+          colors: ["#ff7a1a", "#f5c76a", "#8a5cd6", "#8dff6a", "#efe6d0"],
         }),
       );
     }
   };
 
-  /** the thumb on the wax: progress climbs while held, and the seal heals if it is let go */
-  const run = (dir: 1 | -1) => {
-    cancelAnimationFrame(raf.current);
-    let last = performance.now();
-    const step = (now: number) => {
-      const dt = now - last;
-      last = now;
-      const next = Math.max(0, Math.min(1, p.current + (dir * dt) / (dir > 0 ? HOLD_MS : 450)));
-      setProgress(next);
-      if (next >= 1) return complete();
-      if (next <= 0 && dir < 0) return;
-      raf.current = requestAnimationFrame(step);
-    };
-    raf.current = requestAnimationFrame(step);
+  const finishTear = () => animate(progress, 1, { duration: 0.22, ease: "easeOut" }).then(complete);
+
+  const pAt = (clientX: number) => {
+    const r = seamRef.current!.getBoundingClientRect();
+    return Math.min(1, Math.max(0, (clientX - r.left) / r.width));
   };
 
-  const onDown = (e: React.PointerEvent<HTMLButtonElement>) => {
-    if (stage !== "sealed") return;
+  const onDown = (e: React.PointerEvent) => {
+    if (torn || !ready) return;
     unlockSeal();
-    holding.current = true;
+    // the tear has to start where the paper is still whole, not mid-envelope
+    if (pAt(e.clientX) > progress.get() + 0.22) return;
+    dragging.current = true;
+    ticks.current = Math.max(8, Math.round(seamRef.current!.getBoundingClientRect().width / PITCH));
     setHint(false);
     try {
       e.currentTarget.setPointerCapture(e.pointerId);
     } catch {}
-    run(1);
+  };
+  const onMove = (e: React.PointerEvent) => {
+    if (!dragging.current) return;
+    const p = pAt(e.clientX);
+    if (p > progress.get()) progress.set(p); // paper doesn't un-tear
   };
   const onUp = () => {
-    if (!holding.current) return;
-    holding.current = false;
-    if (p.current < 1) run(-1);
-  };
-  // Keyboard and switch users: Enter or Space breaks it without the hold.
-  const onKey = (e: React.KeyboardEvent<HTMLButtonElement>) => {
-    if ((e.key === "Enter" || e.key === " ") && stage === "sealed") {
-      e.preventDefault();
-      unlockSeal();
-      setHint(false);
-      run(1);
+    if (!dragging.current) return;
+    dragging.current = false;
+    if (progress.get() >= COMMIT_AT) void finishTear();
+    else {
+      lastTick.current = 0;
+      animate(progress, 0, { type: "spring", stiffness: 420, damping: 30 });
     }
+  };
+
+  // No visible button: the seam itself is the control. Keyboard and switch users can still focus it
+  // and press Enter, Space or → to tear.
+  const tearByKey = () => {
+    unlockSeal();
+    dragging.current = true; // so the fibres tick
+    setHint(false);
+    ticks.current = Math.max(8, Math.round((seamRef.current?.getBoundingClientRect().width ?? 300) / PITCH));
+    animate(progress, 1, { duration: 0.8, ease: "easeInOut" }).then(() => {
+      dragging.current = false;
+      complete();
+    });
   };
 
   const first = invite.name.split(" ")[0];
@@ -268,52 +330,107 @@ function Invitation({ invite, fresh }: { invite: InviteData; fresh: boolean }) {
     : `${wingOf(invite.room)} · Floor ${floorOf(invite.room)}`;
 
   return (
-    <div className={`inv stage-${stage}${invite.cast ? " cast" : ""}`}>
-      <div className="env">
-        <div className="env-back" />
-        <div className="env-letter">
-          <small>Manor 09 · admits one</small>
-          <b className="script">{invite.name}</b>
-          <div className="env-room">
-            <small>Your room</small>
-            <b>{invite.cast ? `Portrait ${pad2(invite.room)}` : roomLabel(invite.room)}</b>
-            <span>{where}</span>
+    <div
+      className={`inv${invite.cast ? " cast" : ""}${open ? " open" : ""}${!ready ? " arriving" : ""} pb-${postbox.stage}`}
+    >
+      {/* the clip lives on this static wrapper: put on the moving paper it would travel with it */}
+      <div className="env-feed">
+        {postbox.stage !== "done" && (
+          <div className={`letterbox ${postbox.stage}`} aria-hidden="true">
+            <i className="lb-flap" />
+            <span className="lb-slot" />
+            <b>Manor 09</b>
           </div>
-          <div className="env-stamp" aria-live="polite">
-            The manor expects you
+        )}
+        <motion.div className="env-paper" style={{ y: postbox.y }}>
+          {/* roughens the torn edges so the paper shows fibres instead of a vector-clean cut */}
+          <svg width="0" height="0" style={{ position: "absolute" }} aria-hidden="true">
+            <filter id="inv-rough" x="-5%" y="-60%" width="110%" height="220%">
+              <feTurbulence type="fractalNoise" baseFrequency="0.85 0.3" numOctaves="2" seed="9" result="noise" />
+              <feDisplacementMap in="SourceGraphic" in2="noise" scale="5" xChannelSelector="R" yChannelSelector="G" />
+            </filter>
+          </svg>
+
+          {/* the body: the pocket, with the letter inside it */}
+          <div className="env-body">
+            <div className="env-letter">
+              <small>Manor 09 · admits one</small>
+              <div className="env-room">
+                <b>{invite.cast ? `Portrait ${pad2(invite.room)}` : roomLabel(invite.room)}</b>
+                <span>{where}</span>
+              </div>
+              <div className="env-stamp" aria-live="polite">
+                The manor expects you
+              </div>
+              <b className="script">{invite.name}</b>
+            </div>
+            <div className="env-front">
+              <span className="env-to">By candlelight, to</span>
+              <b className="env-name script">{invite.name}</b>
+              <span className="env-line">{invite.cast ? "☾ Resident of the manor" : "Manor 09 · 7 October · one night"}</span>
+            </div>
+            <div className="postmark" aria-hidden="true">
+              <span>Manor 09</span>
+              <b>7 Oct</b>
+            </div>
+            <span className="env-fibre below" aria-hidden="true">
+              <i />
+            </span>
+            {/* the lower half of the wax stays on the body when the strip goes */}
+            <div className="seal-half bottom" aria-hidden="true">
+              <SealArt cracks={cracks} />
+            </div>
+            {!torn && ready && (
+              <div
+                className="env-seam"
+                ref={seamRef}
+                role="slider"
+                tabIndex={0}
+                aria-label="Tear the invitation open along the top"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={0}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " " || e.key === "ArrowRight") {
+                    e.preventDefault();
+                    tearByKey();
+                  }
+                }}
+                onPointerDown={onDown}
+                onPointerMove={onMove}
+                onPointerUp={onUp}
+                onPointerCancel={onUp}
+              >
+                <motion.i className={`env-handle${hint ? " nudge" : ""}`} style={{ left: handleLeft }} />
+              </div>
+            )}
           </div>
-        </div>
-        <div className="env-front">
-          <span className="env-to">By candlelight, to</span>
-          <b className="env-name script">{invite.name}</b>
-          <span className="env-line">{invite.cast ? "☾ Resident of the manor" : "Manor 09 · 7 October · one night"}</span>
-        </div>
-        <div className="env-flap" />
-        <button
-          ref={sealRef}
-          type="button"
-          className={`seal${hint && stage === "sealed" ? " nudge" : ""}`}
-          aria-label="Press and hold to break the seal"
-          disabled={stage !== "sealed"}
-          onPointerDown={onDown}
-          onPointerUp={onUp}
-          onPointerCancel={onUp}
-          onKeyDown={onKey}
-        >
-          <SealArt cracks={cracks} broken={stage === "broken"} />
-        </button>
-        <svg className="bat bat-out" viewBox="0 0 100 50" aria-hidden="true">
-          <g className="wing l">
-            <path d="M50 25 C40 5, 20 0, 2 12 C12 16, 14 22, 10 30 C20 26, 30 28, 36 34 C40 30, 46 28, 50 25Z" />
-          </g>
-          <g className="wing r">
-            <path d="M50 25 C60 5, 80 0, 98 12 C88 16, 86 22, 90 30 C80 26, 70 28, 64 34 C60 30, 54 28, 50 25Z" />
-          </g>
-          <ellipse cx="50" cy="27" rx="7" ry="10" />
-        </svg>
+
+          {/* the strip: the sealed flap, torn off along the seam */}
+          <motion.div
+            className="env-strip"
+            style={{ rotate, y: flyY, opacity: flyOpacity, transformOrigin: hinge }}
+            aria-hidden={torn}
+          >
+            <div className="strip-paper" />
+            <span className="env-fibre above" aria-hidden="true">
+              <i />
+            </span>
+            <div className="seal-half top" aria-hidden="true">
+              <SealArt cracks={cracks} />
+            </div>
+          </motion.div>
+
+          {/* something was living in there */}
+          <div className="bats-out" aria-hidden="true">
+            {[0, 1, 2].map((i) => (
+              <BatOut key={i} i={i} />
+            ))}
+          </div>
+        </motion.div>
       </div>
 
-      {stage === "broken" ? (
+      {!ready ? null : open ? (
         <div className="inv-after">
           <b>Welcome, {first}.</b>
           <span>
@@ -325,14 +442,14 @@ function Invitation({ invite, fresh }: { invite: InviteData; fresh: boolean }) {
             Enter the parlour →
           </a>
         </div>
-      ) : stage === "sealed" ? (
+      ) : (
         <div className="inv-after">
-          <b className={hint ? "pulse-hint" : undefined}>Gatekeeper: press and hold the seal</b>
+          <b className={hint ? "pulse-hint" : undefined}>Gatekeeper: tear along the top →</b>
           <button type="button" className="inv-alt quiet" onClick={() => saveInvite(null)}>
             Not {first}? Start over
           </button>
         </div>
-      ) : null}
+      )}
     </div>
   );
 }
@@ -341,34 +458,19 @@ function Invitation({ invite, fresh }: { invite: InviteData; fresh: boolean }) {
 
 const BLOB =
   "M60 8 C82 6, 104 22, 110 44 C116 66, 106 92, 84 106 C62 120, 30 112, 16 92 C2 72, 6 40, 24 22 C36 10, 48 8, 60 8Z";
-/** cracks radiating from a point just off centre, revealed one by one as the thumb presses */
+/** cracks spreading from the left edge, where the tear arrives, across the wax */
 const CRACK_PATHS = [
-  "M58 52 L44 30 L40 22",
-  "M58 52 L78 38 L92 34",
-  "M58 52 L70 74 L76 94",
-  "M58 52 L36 66 L20 72",
-  "M44 30 L52 18",
-  "M78 38 L86 24",
-  "M70 74 L60 90",
-  "M36 66 L28 88",
+  "M14 58 L30 54 L38 60",
+  "M38 60 L50 50 L56 40",
+  "M38 60 L52 66 L60 78",
+  "M56 40 L66 44 L80 38",
+  "M60 78 L74 82 L88 76",
+  "M80 38 L92 46 L104 44",
+  "M52 66 L64 60 L78 62",
+  "M78 62 L92 64 L106 60",
 ];
-/** six wedges of the seal, each flying off its own way */
-const SHARDS: [dx: number, dy: number, rot: number][] = [
-  [-70, -40, -40],
-  [60, -60, 35],
-  [80, 30, 20],
-  [-60, 60, -30],
-  [20, 90, 50],
-  [-20, -90, -15],
-];
-const wedge = (i: number) => {
-  const a0 = (Math.PI * 2 * i) / SHARDS.length - 0.3;
-  const a1 = (Math.PI * 2 * (i + 1)) / SHARDS.length - 0.3;
-  const pt = (a: number) => `${(60 + Math.cos(a) * 80).toFixed(1)} ${(60 + Math.sin(a) * 80).toFixed(1)}`;
-  return `M60 60 L${pt(a0)} L${pt((a0 + a1) / 2)} L${pt(a1)}Z`;
-};
 
-function SealArt({ cracks, broken }: { cracks: number; broken: boolean }) {
+function SealArt({ cracks }: { cracks: number }) {
   return (
     <svg className="seal-svg" viewBox="0 0 120 120" aria-hidden="true">
       <defs>
@@ -377,41 +479,43 @@ function SealArt({ cracks, broken }: { cracks: number; broken: boolean }) {
           <stop offset="0.6" stopColor="#8e1116" />
           <stop offset="1" stopColor="#4d080b" />
         </radialGradient>
-        {SHARDS.map((_, i) => (
-          <clipPath key={i} id={`shard-${i}`}>
-            <path d={wedge(i)} />
-          </clipPath>
-        ))}
       </defs>
-      {!broken ? (
-        <g className="intact">
-          <path className="blob" d={BLOB} fill="url(#wax)" />
-          <circle className="ring" cx="60" cy="60" r="34" />
-          <text className="mono" x="60" y="71" textAnchor="middle">
-            09
-          </text>
-          <g className="cracks">
-            {CRACK_PATHS.map((d, i) => (
-              <path key={i} d={d} className={i < cracks ? "on" : undefined} />
-            ))}
-          </g>
-        </g>
-      ) : (
-        <g className="shards">
-          {SHARDS.map(([dx, dy, r], i) => (
-            <g
-              key={i}
-              className="shard"
-              style={{ "--dx": `${dx}px`, "--dy": `${dy}px`, "--r": `${r}deg` } as React.CSSProperties}
-            >
-              <g clipPath={`url(#shard-${i})`}>
-                <path d={BLOB} fill="url(#wax)" />
-                <circle className="ring" cx="60" cy="60" r="34" />
-              </g>
-            </g>
-          ))}
-        </g>
-      )}
+      <path className="blob" d={BLOB} fill="url(#wax)" />
+      <circle className="ring" cx="60" cy="60" r="34" />
+      <text className="mono" x="60" y="71" textAnchor="middle">
+        09
+      </text>
+      <g className="cracks">
+        {CRACK_PATHS.map((d, i) => (
+          <path key={i} d={d} className={i < cracks ? "on" : undefined} />
+        ))}
+      </g>
+    </svg>
+  );
+}
+
+const BAT_FLIGHTS: [dx: number, dy: number, delay: number, size: number][] = [
+  [170, -420, 0.35, 64],
+  [-150, -380, 0.5, 52],
+  [60, -480, 0.65, 44],
+];
+
+function BatOut({ i }: { i: number }) {
+  const [dx, dy, delay, size] = BAT_FLIGHTS[i];
+  return (
+    <svg
+      className="bat bat-out"
+      style={{ "--dx": `${dx}px`, "--dy": `${dy}px`, "--d": `${delay}s`, width: size } as React.CSSProperties}
+      viewBox="0 0 100 50"
+      aria-hidden="true"
+    >
+      <g className="wing l">
+        <path d="M50 25 C40 5, 20 0, 2 12 C12 16, 14 22, 10 30 C20 26, 30 28, 36 34 C40 30, 46 28, 50 25Z" />
+      </g>
+      <g className="wing r">
+        <path d="M50 25 C60 5, 80 0, 98 12 C88 16, 86 22, 90 30 C80 26, 70 28, 64 34 C60 30, 54 28, 50 25Z" />
+      </g>
+      <ellipse cx="50" cy="27" rx="7" ry="10" />
     </svg>
   );
 }

@@ -2,12 +2,14 @@
 
 /**
  * Phone-side sound for the invitation, synthesised from filtered noise so the
- * gate works before any audio asset exists: the quill scratching, the wax
- * stamp, the seal cracking under a thumb and finally giving way.
+ * gate works before any audio asset exists: the envelope feeding through the
+ * letter slot, the wax stamp, paper tearing fibre by fibre, the wax snapping.
  *
  * Phones only let a page start audio after a COMPLETED gesture (tap / touchend),
- * and the audio hardware then takes a few hundred ms to wake. So we unlock on
- * the earliest tap we can get and play a silent sample to warm the output up.
+ * and the audio hardware then takes a few hundred ms to wake. Unlocking at the
+ * start of the swipe is too late: the first half of the tear would be silent.
+ * So we unlock on the earliest tap we can get (`armSealOnFirstTouch`, and the
+ * "Summon my invitation" tap) and play a silent sample to warm the output up.
  */
 let ctx: AudioContext | null = null;
 let noise: AudioBuffer | null = null;
@@ -21,6 +23,7 @@ export function unlockSeal() {
       for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
     }
     if (ctx.state !== "running") void ctx.resume();
+    // one silent sample: wakes the audio hardware now instead of on the first tick
     const warm = ctx.createBufferSource();
     warm.buffer = ctx.createBuffer(1, 1, ctx.sampleRate);
     warm.connect(ctx.destination);
@@ -43,6 +46,7 @@ export function armSealOnFirstTouch() {
 
 function burst(duration: number, gain: number, freq: number, q = 0.7, at = 0) {
   if (!ctx || !noise) return;
+  // while suspended the clock is frozen: anything scheduled now would pile up and fire at once later
   if (ctx.state !== "running") return void ctx.resume();
   const src = ctx.createBufferSource();
   src.buffer = noise;
@@ -76,33 +80,53 @@ function thump(freq: number, to: number, duration: number, gain: number, at = 0)
   o.stop(t + duration + 0.02);
 }
 
-/** the quill scratching one stroke */
-export const quill = () => burst(0.05 + Math.random() * 0.04, 0.22, 3200 + Math.random() * 2500, 1.2);
+/* --------------------------------------------------------------- arrival */
+
+/** the envelope dragging through the letter slot, one push at a time */
+export const paperStep = () => {
+  burst(0.05 + Math.random() * 0.03, 0.3, 1400 + Math.random() * 900, 0.9);
+  burst(0.03, 0.15, 300, 0.7);
+};
+/** the brass flap of the slot clacking shut */
+export const slotClack = () => {
+  burst(0.05, 0.6, 3200, 2.5);
+  thump(900, 300, 0.06, 0.35);
+  burst(0.12, 0.25, 1800, 4, 0.02);
+};
 /** the wax stamp coming down */
 export const stamp = () => {
   thump(120, 40, 0.22, 0.9);
   burst(0.08, 0.5, 900);
 };
-/** the wax giving a little under the thumb */
+
+/* ------------------------------------------------------------------ tear */
+
+/** one more fibre giving way */
+export const ripTick = () => burst(0.07, 0.5, 2600 + Math.random() * 1800);
+/** the strip coming free */
+export const ripFinish = () => {
+  burst(0.32, 0.8, 1800);
+  burst(0.18, 0.5, 4200);
+};
+/** the wax crazing as the tear reaches it */
 export const crackTick = () => {
   burst(0.05, 0.6, 2800 + Math.random() * 2400, 2);
   thump(220, 90, 0.05, 0.25);
 };
-/** the seal going */
-export const sealBreak = () => {
-  burst(0.09, 0.9, 3600, 1.4);
-  burst(0.22, 0.7, 1400, 0.8, 0.02);
-  burst(0.35, 0.4, 500, 0.7, 0.05);
-  thump(160, 45, 0.3, 0.8);
+/** the seal snapping in two */
+export const sealSnap = () => {
+  burst(0.06, 0.9, 3800, 1.6);
+  burst(0.2, 0.7, 1200, 0.9, 0.03);
+  thump(180, 50, 0.28, 0.85);
 };
-/** the flap lifting: a paper rustle */
+/** the letter sliding out */
 export const rustle = () => {
   burst(0.18, 0.28, 2200, 0.6);
   burst(0.22, 0.2, 4200, 0.8, 0.08);
 };
-/** a bat leaving in a hurry */
+/** something leaving in a hurry */
 export const flutter = () => {
-  for (let i = 0; i < 7; i++) burst(0.03, 0.25, 700 + Math.random() * 400, 3, i * 0.05);
+  for (let i = 0; i < 9; i++) burst(0.03, 0.25, 700 + Math.random() * 400, 3, i * 0.05);
 };
 
 export function buzz(pattern: number | number[]) {

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef } from "react";
 import * as sfx from "@/lib/sfx";
 import { ROOMS, roomLabel, wingOf, type Arrived } from "@/lib/show";
-import { Bats, Cobweb, Fog, Lightning, Moon } from "./atmosphere";
+import { Bats, Cobweb, Fog, Lightning, lightning, Moon } from "./atmosphere";
 import { Parade } from "./Candy";
 
 /**
@@ -14,10 +14,14 @@ export function Gates({ arrived, photos }: { arrived: Arrived[]; photos: string[
   const latest = arrived[arrived.length - 1];
   const taken = useMemo(() => new Map(arrived.map((g) => [g.room, g])), [arrived]);
 
-  // a note for each arrival, but not for whoever was already in when the screen loaded
+  // a note for each arrival (and a flash of lightning for a resident), but not for whoever was
+  // already in when the screen loaded
   const seen = useRef<number | null>(null);
   useEffect(() => {
-    if (seen.current !== null && arrived.length > seen.current && latest) sfx.chime(latest.cast);
+    if (seen.current !== null && arrived.length > seen.current && latest) {
+      sfx.chime(latest.cast);
+      if (latest.cast) lightning.strike(false);
+    }
     seen.current = arrived.length;
   }, [arrived.length, latest]);
 
