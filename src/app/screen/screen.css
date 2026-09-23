@@ -909,6 +909,19 @@
   82% { transform: scale(0.95) rotate(4deg); }
   88%, 100% { transform: scale(1); }
 }
+/* on the gates stroll the ghost vanishes and turns up further down the line, then blinks back to its place */
+.gates-stroll .ghost { animation: ghost-teleport 9s 1s ease-in-out infinite; }
+@keyframes ghost-teleport {
+  0%, 52% { transform: translateX(0) scale(1); opacity: 1; }
+  56% { transform: translateX(0) scale(0.7); opacity: 0; }
+  60% { transform: translateX(720px) scale(0.7); opacity: 0; }
+  64% { transform: translateX(720px) scale(1.4) rotate(-6deg); opacity: 1; }
+  70%, 82% { transform: translateX(720px) scale(1); opacity: 1; }
+  86% { transform: translateX(720px) scale(0.7); opacity: 0; }
+  90% { transform: translateX(0) scale(0.7); opacity: 0; }
+  94% { transform: translateX(0) scale(1.2); opacity: 1; }
+  100% { transform: translateX(0) scale(1); opacity: 1; }
+}
 /* the cat arches its back and hisses */
 @keyframes cat-arch {
   0%, 70%, 100% { transform: scale(1, 1); }
