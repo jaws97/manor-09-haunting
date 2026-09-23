@@ -16,7 +16,7 @@ create table if not exists m09_invites (
   id         text primary key,
   name       text    not null,
   room       integer not null unique,          -- uniqueness is what stops two guests sharing a room
-  cast       boolean not null default false,
+  resident   boolean not null default false,   -- ("cast" is a reserved word in Postgres)
   entered_at timestamptz
 );
 

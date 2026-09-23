@@ -15,12 +15,13 @@ const EXT: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "
 const newId = (n = 9) => randomBytes(n).toString("base64url");
 const norm = (s: string) => s.trim().toLowerCase().replace(/\s+/g, " ");
 
-type InviteRow = { id: string; name: string; room: number; cast: boolean; entered_at: string | null };
+/** the column is `resident`: "cast" is a reserved word in Postgres */
+type InviteRow = { id: string; name: string; room: number; resident: boolean; entered_at: string | null };
 const toInvite = (r: InviteRow): Invite => ({
   id: r.id,
   name: r.name,
   room: r.room,
-  cast: r.cast,
+  cast: r.resident,
   enteredAt: r.entered_at ? Date.parse(r.entered_at) : undefined,
 });
 
@@ -98,7 +99,7 @@ export class SupabaseStore implements ShowStore {
   private async insertInvite(name: string, room: number, cast: boolean): Promise<Invite | null> {
     const { data, error } = await this.db
       .from("m09_invites")
-      .insert({ id: newId(), name, room, cast })
+      .insert({ id: newId(), name, room, resident: cast })
       .select()
       .maybeSingle();
     if (error?.code === "23505") return null;
