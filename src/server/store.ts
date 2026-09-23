@@ -1,0 +1,226 @@
+import "server-only";
+import { randomBytes } from "node:crypto";
+import { mkdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
+import path from "node:path";
+import { residents } from "@/data/residents";
+import { initialShow, ROOMS, stepShow, type HostAction, type ShowState } from "@/lib/show-core";
+import { SupabaseStore } from "./supabase-store";
+
+/**
+ * Storage seam. Everything the routes need goes through `ShowStore`, so the
+ * file-backed store below (one Node process: `next dev` / `next start` on the
+ * projector laptop or any single-instance host) can be swapped for a Supabase
+ * store on Vercel without touching routes or UI.
+ */
+export type Invite = { id: string; name: string; room: number; cast: boolean; enteredAt?: number };
+export type StoredWhisper = { id: string; name: string; text: string; at: number };
+export type StoredPhoto = { id: string; name: string; type: string; at: number };
+
+export interface ShowStore {
+  getShow(): Promise<ShowState>;
+  host(action: HostAction): Promise<ShowState>;
+  issueInvite(name: string): Promise<Invite>;
+  /** null once the show has been reset: phones use this to notice their invitation is void */
+  getInvite(inviteId: string): Promise<Invite | null>;
+  enter(inviteId: string): Promise<Invite | null>;
+  scream(n: number): Promise<void>;
+  /** whispers and photos are not moderated: they reach the screen the moment they land */
+  addWhisper(name: string, text: string): Promise<void>;
+  addPhoto(name: string, type: string, bytes: Uint8Array): Promise<void>;
+  readPhoto(id: string): Promise<{ type: string; bytes: Uint8Array } | null>;
+}
+
+const newId = (n = 9) => randomBytes(n).toString("base64url");
+const norm = (s: string) => s.trim().toLowerCase().replace(/\s+/g, " ");
+
+type Data = { show: ShowState; invites: Invite[]; whispers: StoredWhisper[]; photos: StoredPhoto[] };
+
+const DIR = path.join(process.cwd(), ".data");
+const FILE = path.join(DIR, "show.json");
+const PHOTO_DIR = path.join(DIR, "photos");
+const EXT: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
+
+/** In-memory state, kept on globalThis so it survives dev hot reloads. Only data lives here, never code. */
+type Mem = { data: Data | null; loading: Promise<Data> | null; saveTimer: NodeJS.Timeout | null };
+
+class FileStore implements ShowStore {
+  constructor(private mem: Mem) {}
+  private get data() {
+    return this.mem.data;
+  }
+  private set data(d: Data | null) {
+    this.mem.data = d;
+  }
+  private get loading() {
+    return this.mem.loading;
+  }
+  private set loading(l: Promise<Data> | null) {
+    this.mem.loading = l;
+  }
+  private get saveTimer() {
+    return this.mem.saveTimer;
+  }
+  private set saveTimer(t: NodeJS.Timeout | null) {
+    this.mem.saveTimer = t;
+  }
+
+  private load(): Promise<Data> {
+    if (this.data) return Promise.resolve(this.data);
+    this.loading ??= (async () => {
+      let d: Data = { show: initialShow, invites: [], whispers: [], photos: [] };
+      try {
+        const raw = JSON.parse(await readFile(FILE, "utf8")) as Partial<Data>;
+        d = { ...d, ...raw, show: { ...initialShow, ...raw.show } };
+      } catch {}
+      return (this.data = d);
+    })();
+    return this.loading;
+  }
+
+  /** bump rev and persist soon; a crash loses at most ~300ms of screams */
+  private touch(d: Data, show: ShowState = d.show) {
+    d.show = { ...show, rev: d.show.rev + 1 };
+    if (this.saveTimer) return;
+    this.saveTimer = setTimeout(async () => {
+      this.saveTimer = null;
+      try {
+        await mkdir(DIR, { recursive: true });
+        await writeFile(FILE + ".tmp", JSON.stringify(this.data));
+        await rename(FILE + ".tmp", FILE);
+      } catch (e) {
+        console.error("[store] save failed", e);
+      }
+    }, 300);
+  }
+
+  async getShow() {
+    return (await this.load()).show;
+  }
+
+  async host(action: HostAction) {
+    const d = await this.load();
+    if (action.type === "reset") {
+      await Promise.all(d.photos.map((p) => unlink(this.photoPath(p)).catch(() => {})));
+      d.invites = [];
+      d.whispers = [];
+      d.photos = [];
+      this.touch(d, { ...initialShow });
+    } else if (action.type === "simulate") {
+      const room = this.freeRoom(d, false);
+      if (room) {
+        const cast = room <= residents.length;
+        const name = cast ? residents[room - 1].name : `Guest ${String(room).padStart(3, "0")}`;
+        d.invites.push({ id: newId(), name, room, cast, enteredAt: Date.now() });
+        this.touch(d, { ...d.show, arrived: [...d.show.arrived, { room, name, cast, at: Date.now() }] });
+      }
+    } else {
+      const next = stepShow(d.show, action, residents.length);
+      if (next !== d.show) this.touch(d, next);
+    }
+    return d.show;
+  }
+
+  /** residents keep rooms 1..27 (their portrait number); everyone else gets a random free room below them */
+  private freeRoom(d: Data, reserveCast = true): number | null {
+    const taken = new Set(d.invites.map((t) => t.room));
+    const from = reserveCast ? residents.length + 1 : 1;
+    const free: number[] = [];
+    for (let r = from; r <= ROOMS; r++) if (!taken.has(r)) free.push(r);
+    // house full: overflow into the crypt rather than turning anyone away
+    if (!free.length) return reserveCast ? Math.max(ROOMS, ...taken) + 1 : null;
+    return free[Math.floor(Math.random() * free.length)];
+  }
+
+  async issueInvite(rawName: string) {
+    const d = await this.load();
+    const name = rawName.trim().replace(/\s+/g, " ").slice(0, 48);
+    const i = residents.findIndex((r) => norm(r.name) === norm(name));
+    const castRoomFree = i >= 0 && !d.invites.some((t) => t.room === i + 1);
+    const invite: Invite = castRoomFree
+      ? { id: newId(), name: residents[i].name, room: i + 1, cast: true }
+      : { id: newId(), name, room: this.freeRoom(d)!, cast: false };
+    d.invites.push(invite);
+    this.touch(d);
+    return invite;
+  }
+
+  async getInvite(inviteId: string) {
+    return (await this.load()).invites.find((x) => x.id === inviteId) ?? null;
+  }
+
+  async enter(inviteId: string) {
+    const d = await this.load();
+    const t = d.invites.find((x) => x.id === inviteId);
+    if (!t) return null;
+    if (!t.enteredAt) {
+      t.enteredAt = Date.now();
+      this.touch(d, {
+        ...d.show,
+        arrived: [...d.show.arrived, { room: t.room, name: t.name, cast: t.cast, at: t.enteredAt }],
+      });
+    }
+    return t;
+  }
+
+  async scream(n: number) {
+    const d = await this.load();
+    this.touch(d, { ...d.show, screams: d.show.screams + n });
+  }
+
+  async addWhisper(name: string, text: string) {
+    const d = await this.load();
+    const w: StoredWhisper = { id: newId(), name, text, at: Date.now() };
+    d.whispers.push(w);
+    this.touch(d, { ...d.show, whispers: [...d.show.whispers, w] });
+  }
+
+  private photoPath(p: StoredPhoto) {
+    return path.join(PHOTO_DIR, `${p.id}.${EXT[p.type]}`);
+  }
+
+  async addPhoto(name: string, type: string, bytes: Uint8Array) {
+    const d = await this.load();
+    const p: StoredPhoto = { id: newId(), name, type, at: Date.now() };
+    await mkdir(PHOTO_DIR, { recursive: true });
+    await writeFile(this.photoPath(p), bytes);
+    d.photos.push(p);
+    this.touch(d, { ...d.show, photos: [...d.show.photos, p.id] });
+  }
+
+  async readPhoto(id: string) {
+    const d = await this.load();
+    const p = d.photos.find((x) => x.id === id);
+    if (!p) return null;
+    try {
+      return { type: p.type, bytes: new Uint8Array(await readFile(this.photoPath(p))) };
+    } catch {
+      return null;
+    }
+  }
+}
+
+// One copy of the data per process. The store object itself is rebuilt on every module load, so a hot
+// reload picks up new logic (phase order, room rules) instead of running stale code against live state.
+const g = globalThis as unknown as { __manor09Mem?: Mem };
+
+// Supabase in production when its server credentials are present (Vercel's Supabase integration
+// sets both); otherwise the local file store. `next dev` ALWAYS uses the file store, even with a
+// pulled .env.local, so local testing never lands in the live database. STORE=supabase overrides
+// that when you really want local dev against the real thing.
+// The integration lets you choose a prefix when connecting a project (STORAGE_SUPABASE_URL, …),
+// so match on the suffix rather than the exact name.
+function envEndingWith(suffix: string, exclude?: RegExp) {
+  if (process.env[suffix]) return process.env[suffix];
+  const key = Object.keys(process.env)
+    .sort()
+    .find((k) => k.endsWith(suffix) && !exclude?.test(k) && process.env[k]);
+  return key ? process.env[key] : undefined;
+}
+const sbUrl = envEndingWith("SUPABASE_URL");
+const sbKey = envEndingWith("SUPABASE_SERVICE_ROLE_KEY", /^NEXT_PUBLIC_/);
+const wantSupabase = process.env.NODE_ENV === "production" || process.env.STORE === "supabase";
+const useSupabase = !!sbUrl && !!sbKey && wantSupabase;
+export const storeKind: "supabase" | "file" = useSupabase ? "supabase" : "file";
+export const store: ShowStore = useSupabase
+  ? new SupabaseStore(sbUrl!, sbKey!)
+  : new FileStore((g.__manor09Mem ??= { data: null, loading: null, saveTimer: null }));

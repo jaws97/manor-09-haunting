@@ -1,0 +1,52 @@
+# Manor 09 · The Haunting
+
+Halloween-themed show for the September birthdays (the night: 7 Oct 2026). The big screen is a haunted manor; phones are the invitations. Full concept, run of show and status: [PLAN.md](PLAN.md).
+
+## Run it
+
+```bash
+npm install
+npm run dev
+```
+
+| Route | Who | What |
+|---|---|---|
+| `/` | everyone, before the night | The gate: countdown, ticker, 27 dust-sheeted frames. Titles and portraits stay under the sheets until `revealAt` in `src/data/event.ts` (`NEXT_PUBLIC_REVEAL=1` previews the reveal). |
+| `/screen` | projector laptop (PIN) | The show. Always opens on the gates (QR) screen. Click once to wake the manor (sound + fullscreen). `←` `→` / space step the show if the remote dies; `Home` returns to the gates; `c` toggles the candy break. After a mid-show refresh, jump back from `/host`. |
+| `/host` | keeper's phone (PIN) | Remote: next/back, candy break (a snipe over the current phase), jump to phase or portrait, keeper's cues, mute, rehearsal tools, reset. |
+| `/invite` | guests | The gatehouse → a sealed invitation → the gatekeeper presses and holds the wax seal until it shatters. Lights the guest's window in the manor on `/screen`. |
+| `/join` | guests, once inside | The parlour: SCREAM button (tap, or the microphone), whispers and emoji that appear live on the big screen, spirit photographs. |
+
+**PIN:** set `HOST_PIN` in `.env.local` (required in production). In development it falls back to `0909`.
+
+**Local data:** `npm run dev` always uses the file store in `.data/`, even when `.env.local` holds Supabase credentials, so rehearsals and test invitations never land in the live database. To point local dev at the live database on purpose, run it with `STORE=supabase` (PowerShell: `$env:STORE="supabase"; npm run dev`). `/api/health` tells you which store is active.
+
+**Rehearse without a crowd:** `npm run rehearse` simulates 100 guests arriving, breaking their seals, whispering and screaming (open `/screen` first; try `-- --guests 150 --arrive 60`). Reset from `/host` afterwards.
+
+**The keeper (announcer):** lines live in `src/data/vo.ts`; `/host/script` is the recording sheet. Drop takes into `public/media/vo/<id>.mp3` — until then the browser voice stands in, slow and low.
+
+**Portraits:** `public/portraits/NN.webp` (1200×1800, no text, no faces). After adding or replacing one, run `npm run portraits` to rebuild the thumbnails, the blurred room backdrops and the accent colours. `scripts/fetch-generated.mjs` pulls freshly generated art in from a `{ "NN": url }` file. `/host/portraits` is the review gallery.
+
+**Rehearse on real phones:** run the dev server, then open `http://<laptop-ip>:3000/invite` on a phone on the same Wi-Fi.
+
+## Deploy to Vercel
+
+Vercel functions share no memory or disk, so the deployed app must use the Supabase store (it switches on automatically in production when the credentials are present). This project can share the Supabase project the movie show used: every object here is prefixed `m09_` (tables, functions) or `m09-` (bucket), so nothing collides with `s09_`.
+
+1. `vercel link` (new project) then `vercel env pull .env.local`, or connect the Supabase integration in the Vercel dashboard.
+2. `node scripts/setup-supabase.mjs` — runs [supabase/schema.sql](supabase/schema.sql) and creates the private `m09-photos` bucket. Safe to re-run; `--wipe` clears show data.
+3. **Vercel → Project → Settings → Environment Variables:** `HOST_PIN` (required; the app refuses to run staff pages without it), `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` (already present if the integration is connected). The service-role key is server-only; never prefix it with `NEXT_PUBLIC_`.
+4. Deploy, then open `/api/health`. You want `{"ok":true,"store":"supabase","pin":true}`.
+5. Load-test the real thing: `npm run rehearse -- --url https://<your-app>.vercel.app`, then **Reset show** from `/host`.
+
+Keep the repo private until the night: it contains the residents' titles and the surprise.
+
+## How it fits together
+
+- `src/data/` — all event content (residents, titles, plaque lines, keeper's script). Re-skin here for next month's theme.
+- `src/lib/show-core.ts` — show state + phase machine shared by server and client. Nothing secret lives in it.
+- `src/server/store.ts` — `ShowStore` seam: file-backed locally (`.data/`), `src/server/supabase-store.ts` on Vercel. Racy writes (screams, rooms) are single SQL statements or compare-and-swap.
+- `src/app/api/` — guests only ever POST (invite, enter, scream, whisper, photo). Only `/screen` and `/host` poll `/api/show`.
+- `src/lib/sfx.ts`, `src/lib/seal.ts` — all sound is synthesised with WebAudio (thunder, wind, creaks, knocks, bells, organ, wolves, whispers, bats; the quill, the wax, the cracking seal). Swap individual cues for recorded files later.
+- `src/components/screen/` — the stage: `atmosphere.tsx` (fog, lightning, bats, moon, candles, cobwebs), one file per phase.
+- Nothing is moderated. Whispers appear on the big screen as they arrive (emoji drift up, text shows as a whisper card) and are written into the guest book at the end; spirit photographs go straight onto the gates screen.
