@@ -67,36 +67,44 @@ function Gate({ side }: { side: "l" | "r" }) {
 
 /* --------------------------------------------------------------- midnight */
 
-/** The tower clock: the last five strokes before midnight, then the manor wakes. */
+/**
+ * The tower clock, after the title card: the minute hand creeps the last five minutes to twelve with
+ * the ticks, then the strike lands with lightning, bats and three tolls, and the manor wakes. Runs on
+ * by itself into the séance. No numbers count down: it is a clock, not a timer.
+ */
 export function Midnight({ onDone }: { onDone: () => void }) {
   const [n, setN] = useState(5);
   const finish = useEffectEvent(onDone);
+  const struck = n === 0;
 
   useEffect(() => {
     const t = setInterval(sfx.tick, 500);
     return () => clearInterval(t);
   }, []);
+  // one minute a second until the strike; keyed on n so every minute schedules the next
   useEffect(() => {
-    sfx.toll(true);
-    if (n === 0) {
-      lightning.strike(true);
-      sfx.bats();
-    }
-  }, [n]);
-  useEffect(() => {
-    if (n === 0) {
-      const t = setTimeout(() => finish(), 2200);
+    if (n > 0) {
+      const t = setTimeout(() => setN((v) => v - 1), 1000);
       return () => clearTimeout(t);
     }
-    const t = setTimeout(() => setN((v) => v - 1), 1000);
-    return () => clearTimeout(t);
+    const t = [
+      setTimeout(() => {
+        lightning.strike(true);
+        sfx.bats();
+        sfx.toll(true);
+      }, 0),
+      setTimeout(() => sfx.toll(true), 750),
+      setTimeout(() => sfx.toll(true), 1500),
+      setTimeout(() => finish(), 2600),
+    ];
+    return () => t.forEach(clearTimeout);
   }, [n]);
 
   return (
     <div className="midnight">
       <Lightning />
       <Fog density={0.8} />
-      {n === 0 && <Bats every={2} max={6} />}
+      {struck && <Bats every={2} max={6} />}
       <div className="clock" aria-hidden="true">
         <svg viewBox="0 0 200 200">
           <circle className="face" cx="100" cy="100" r="92" />
@@ -129,10 +137,11 @@ export function Midnight({ onDone }: { onDone: () => void }) {
           <circle className="pin" cx="100" cy="100" r="5" />
         </svg>
       </div>
-      <div className="midnight-num" key={n}>
-        {n > 0 ? n : "Midnight"}
+      {/* kept in the layout while hidden so the clock does not jump when the word lands */}
+      <div className="midnight-num" key={struck ? "strike" : "wait"} style={{ visibility: struck ? "visible" : "hidden" }}>
+        Midnight
       </div>
-      <p className="midnight-sub">{n > 0 ? "The clock strikes" : "The manor wakes"}</p>
+      <p className="midnight-sub">{struck ? "The manor wakes" : "The manor holds its breath"}</p>
     </div>
   );
 }

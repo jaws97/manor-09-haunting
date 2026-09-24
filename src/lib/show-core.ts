@@ -3,15 +3,15 @@
 /**
  * Run of show. Once the host leaves the gates the opening plays as one piece,
  * cinema-style: the team ident first, like a production company card, then the
- * storm breaks over the manor, the clock strikes midnight, and the title card
- * waits for the host.
+ * storm breaks over the manor and the title card waits for the host. From there
+ * the clock strikes midnight and tolls the séance in.
  */
 export const PHASES = [
   "gates",
   "ident",
   "storm",
-  "midnight",
   "title",
+  "midnight",
   "seance",
   "gallery",
   "scream",
@@ -33,7 +33,8 @@ export const PHASE_LABEL: Record<Phase, string> = {
 
 /** What the keeper should know before pressing a phase; shown under it on the remote. */
 export const PHASE_NOTE: Partial<Record<Phase, string>> = {
-  ident: "Opens the show, then runs on by itself: the storm, midnight, the title card",
+  ident: "Opens the show, then runs on by itself: the storm, then the title card",
+  midnight: "Runs on by itself into the séance",
 };
 
 /** Rooms in the manor: 8 floors of 15 windows. The residents keep rooms 1..27, the top floors. */
