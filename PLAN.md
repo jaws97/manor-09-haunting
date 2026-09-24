@@ -61,6 +61,8 @@ Photo tiers from the movie plan still apply if real likenesses are wanted later 
 
 **Also built (Sep 23, night):** the haunted ident cut replaces the movie show’s birthday ident, which read as an ad break between the midnight strike and the title card; the ident now opens the show, cinema-style, and the storm runs straight into the title card. The midnight clock moved after the title as the séance’s lead-in, and no longer counts down like a timer.
 
+**Rehearsed (Sep 25):** a second 100-guest load test against the live site, now that the ident cut is on it — 100 of 100 through the gate in 45.4s · 16 arriving as residents · **0 duplicate rooms** · 0 of 1360 requests failed · latency p50 286ms, p95 375ms (the 2.6s maximum is one cold function on the first call). `/api/health` answers `{"ok":true,"store":"supabase","pin":true}`. Room assignment stays unique under a real crowd's worth of simultaneous arrivals, which was the thing worth proving; the numbers the server reports afterwards include the previous run's residue until the show is reset from `/host`.
+
 **Next:** organiser’s review at `/host/portraits` · real inside jokes in `src/data/residents.ts` taglines · keeper's voice (pick one of `docs/voice-samples`, then the 37 lines at `/host/script`) · full rehearsal on the real projector with a mid-range Android + iPhone (mic permission prompt, the tear on a real thumb, haptics).
 
 ## Open questions
