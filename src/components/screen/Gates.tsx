@@ -114,9 +114,17 @@ export function Manor({ taken, latest }: { taken: Map<number, Arrived>; latest?:
           return <i key={i} className={`win${g ? " lit" : ""}${g?.cast ? " cast" : ""}${fresh ? " fresh" : ""}`} />;
         })}
       </div>
-      {/* the front door: two leaves under a lit fanlight, a lantern either side, three steps down */}
+      {/* the front door: two plank leaves standing ajar on a hall lit sickly green,
+          something crossing it now and then, a cobwebbed fanlight, iron ring knocker */}
       <i className="manor-lamp l" />
-      <div className="manor-door" />
+      <div className="manor-door">
+        <i className="hall" />
+        <i className="leaf l">
+          <i className="knocker" />
+        </i>
+        <i className="leaf r" />
+        <i className="fanlight" />
+      </div>
       <i className="manor-lamp r" />
       <div className="manor-steps" />
     </div>
