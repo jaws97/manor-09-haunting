@@ -19,7 +19,7 @@ export const showCues = {
   },
   title: {
     id: "cue-title",
-    text: "Manor Oh Nine proudly presents... The Haunting. Twenty-seven residents. Not one of them at rest.",
+    text: "A Manor Oh Nine production... The Haunting. Twenty-seven residents. Not one of them at rest.",
   },
   seance: {
     id: "cue-seance",
