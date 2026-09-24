@@ -1,7 +1,7 @@
 export const event = {
   manor: "Manor 09",
   show: "The Haunting",
-  tagline: "Twenty-seven residents. One night. Not one of them at rest.",
+  tagline: "Twenty-eight residents. One night. Not one of them at rest.",
   /** The night, local time (IST) */
   startsAt: "2026-10-07T18:30:00+05:30",
   venue: "[venue]",

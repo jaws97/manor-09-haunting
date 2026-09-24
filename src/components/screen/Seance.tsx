@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { residents } from "@/data/residents";
 import { showCues } from "@/data/vo";
 import * as sfx from "@/lib/sfx";
 import { say } from "@/lib/vo";
@@ -39,7 +40,8 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /**
  * The séance: the keeper asks for a sign, the planchette spells SEPTEMBER,
- * then 27, then slides to YES as the candles gutter. Waits for the host.
+ * then the number of residents, then slides to YES as the candles gutter.
+ * Waits for the host.
  */
 export function Seance() {
   const [at, setAt] = useState<string>("GOODBYE");
@@ -73,7 +75,8 @@ export function Seance() {
       }
       await sleep(700);
       setMessage((m) => [...m, " · "]);
-      for (const d of "27") {
+      // however many residents there are tonight, so the board can never spell a stale count
+      for (const d of String(residents.length)) {
         await land(d);
         if (dead) return;
         setMessage((m) => [...m, d]);

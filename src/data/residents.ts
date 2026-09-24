@@ -36,6 +36,7 @@ const raw: [title: string, name: string, lore: string, day: number][] = [
   ["The Haunted Mansi-on", "Mansi Gupta", "the haunted house", 12],
   ["Urmila, the Sea Witch", "Urmila Chowdhury", "the sea witch", 12],
   ["Anil-o'-Lantern", "Anil Kumar", "the jack-o'-lantern", 12],
+  ["Deepti Borealis", "Deepti Bora", "the will-o'-the-wisp", 16],
   ["The Mad Sai-entist", "Saikumar Sanikala", "the mad scientist", 17],
   ["Ashish the Ghoulish", "Ashish Peri", "the ghoul", 19],
   ["Swapnil the Sandman", "Swapnil Narad", "the sandman", 20],
@@ -66,6 +67,7 @@ const taglines = [
   "Every window is lit. Nobody's home. Classic work-from-home.",
   "Trades voices for wishes. Currently holding thirty-one voices and a mute button.",
   "Glows brightest on a deadline. Hollow inside by Friday.",
+  "A light bobbing away down the corridor. You follow it for an hour. It was a status call.",
   "It's not mad science. It's just untested in production.",
   "Never grew up. Never grew old. The to-do list did both.",
   "Puts the whole room to sleep. It's called a status update.",
@@ -84,7 +86,10 @@ const taglines = [
  * the gallery wall, NN-bg.webp for the room's ambient wash). The art carries no
  * text: titles are laid over it in HTML.
  */
-const withPortrait = new Set(Array.from({ length: 27 }, (_, i) => i + 1));
+const withoutPortrait = new Set([17]); // Deepti Borealis, still to be generated
+const withPortrait = new Set(
+  Array.from({ length: 28 }, (_, i) => i + 1).filter((n) => !withoutPortrait.has(n)),
+);
 
 const slugify = (s: string) =>
   s.toLowerCase().replace(/['’.,“”]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");

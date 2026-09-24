@@ -121,7 +121,7 @@ export function Gate({
         <div className="lamp l1" />
         <div className="lamp l2" />
         <p>
-          <b>Manor 09</b>Twenty-seven residents. Not one of them at rest.
+          <b>Manor 09</b>Twenty-eight residents. Not one of them at rest.
         </p>
       </div>
       <footer>Manor 09 · one night only.</footer>

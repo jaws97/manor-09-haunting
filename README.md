@@ -11,7 +11,7 @@ npm run dev
 
 | Route | Who | What |
 |---|---|---|
-| `/` | everyone, before the night | The gate: countdown, ticker, 27 dust-sheeted frames. Titles and portraits stay under the sheets until `revealAt` in `src/data/event.ts` (`NEXT_PUBLIC_REVEAL=1` previews the reveal). |
+| `/` | everyone, before the night | The gate: countdown, ticker, 28 dust-sheeted frames. Titles and portraits stay under the sheets until `revealAt` in `src/data/event.ts` (`NEXT_PUBLIC_REVEAL=1` previews the reveal). |
 | `/screen` | projector laptop (PIN) | The show. Always opens on the gates (QR) screen. Click once to wake the manor (sound + fullscreen). `←` `→` / space step the show if the remote dies; `Home` returns to the gates; `c` toggles the candy break. After a mid-show refresh, jump back from `/host`. |
 | `/host` | keeper's phone (PIN) | Remote: next/back, candy break (a snipe over the current phase), jump to phase or portrait, keeper's cues, mute, rehearsal tools, reset. |
 | `/invite` | guests | The gatehouse → a sealed invitation → the gatekeeper presses and holds the wax seal until it shatters. Lights the guest's window in the manor on `/screen`. |
