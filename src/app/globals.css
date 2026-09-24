@@ -14,6 +14,11 @@
   --candle-2: #fde7b0;
   --ecto: #8dff6a;
   --ecto-2: #c7ff9e;
+  /* a colder, brighter green for light the manor throws out of itself, set against
+     the warm candle burning inside it */
+  --spirit: #1ce783;
+  --spirit-2: #b9ffdd;
+  --spirit-deep: #0b6b3c;
   --gilt: #d4a640;
   --gilt-2: #f1d383;
   --gilt-shadow: #7a5a14;

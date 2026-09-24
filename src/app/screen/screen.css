@@ -176,6 +176,7 @@
   61% { filter: brightness(1.08); }
   82% { filter: brightness(0.92); }
 }
+/* the doorway itself is the hall beyond: black, and lit the wrong colour */
 .manor-door {
   position: absolute;
   left: 50%;
@@ -184,33 +185,82 @@
   height: 86px;
   margin-left: -42px;
   border-radius: 42px 42px 3px 3px;
-  background: linear-gradient(180deg, #4a2a18, #2a160c);
-  box-shadow: inset 0 0 0 4px #6b4a2c, inset 0 0 0 6px #1d0f07, 0 0 36px rgba(255, 140, 40, 0.5);
+  background: radial-gradient(ellipse 62% 125% at 50% 82%, var(--spirit-2) 0 5%, var(--spirit) 15% 36%, var(--spirit-deep) 66%, #03120a 92%);
+  box-shadow:
+    inset 0 0 0 4px #2b2239, /* the stone surround */
+    inset 0 0 0 6px #0b0710,
+    0 0 30px rgba(28, 231, 131, 0.5), /* what leaks out onto the steps */
+    0 0 68px rgba(255, 140, 40, 0.2);
+  overflow: hidden;
 }
-/* the fanlight over the doors, lit from inside */
-.manor-door::before {
-  content: "";
+/* something crosses the hall behind the leaves, once in a while */
+.manor-door .hall {
   position: absolute;
-  left: 10px;
-  right: 10px;
-  top: 8px;
-  height: 24px;
-  border-radius: 32px 32px 2px 2px;
-  background: radial-gradient(ellipse at 50% 100%, #fff0b8, var(--pumpkin) 55%, #b3460a);
-  box-shadow: 0 0 14px rgba(255, 140, 40, 0.7);
-  animation: window-flicker 2.4s ease-in-out infinite;
-}
-/* the split between the two leaves, with a knob on each */
-.manor-door::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 38px;
+  left: 0;
   bottom: 6px;
-  width: 3px;
-  margin-left: -1.5px;
-  background: #1d0f07;
-  box-shadow: -12px 20px 0 1px var(--gilt), 12px 20px 0 1px var(--gilt);
+  width: 26px;
+  height: 52px;
+  border-radius: 13px 13px 0 0;
+  background: #02100a;
+  opacity: 0.95;
+  animation: hall-cross 11s 4s linear infinite;
+}
+@keyframes hall-cross {
+  0%, 62% { transform: translateX(8px); opacity: 0; }
+  66% { opacity: 0.95; }
+  92% { opacity: 0.95; }
+  100% { transform: translateX(58px); opacity: 0; }
+}
+/* two leaves of weathered plank, strapped with iron, hinged on the jambs and never quite shut:
+   47% each leaves a sliver of the hall showing between them however they swing */
+.manor-door .leaf {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 47%;
+  background:
+    /* two iron straps, clear of the fanlight, lit along their top edge only */
+    linear-gradient(180deg, transparent 0 41px, #2a2338 41px 42px, #191426 42px 46px, transparent 46px 68px, #2a2338 68px 69px, #191426 69px 73px, transparent 73px),
+    repeating-linear-gradient(90deg, #0e0916 0 7px, #040208 7px 8px, #140d20 8px 15px, #030106 15px 16px);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.95), 0 0 10px 2px rgba(0, 0, 0, 0.9);
+  animation: door-breathe 9s ease-in-out infinite;
+}
+.manor-door .leaf.l { left: 0; transform-origin: left center; }
+.manor-door .leaf.r { right: 0; transform-origin: right center; animation-name: door-breathe-r; }
+/* never quite shut: the gap widens and narrows like the house is breathing */
+@keyframes door-breathe {
+  0%, 100% { transform: perspective(240px) rotateY(-9deg); }
+  50% { transform: perspective(240px) rotateY(-21deg); }
+}
+@keyframes door-breathe-r {
+  0%, 100% { transform: perspective(240px) rotateY(9deg); }
+  50% { transform: perspective(240px) rotateY(21deg); }
+}
+/* an iron ring, hanging off the inner edge of the left leaf */
+.manor-door .knocker {
+  position: absolute;
+  right: 7px;
+  top: 44px;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  border: 3px solid var(--gilt-shadow);
+  box-shadow: 0 -5px 0 -3px var(--gilt-shadow), 0 0 5px rgba(0, 0, 0, 0.9);
+}
+/* the fanlight over the doors: candlelit, and long since given over to spiders */
+.manor-door .fanlight {
+  position: absolute;
+  left: 9px;
+  right: 9px;
+  top: 7px;
+  height: 25px;
+  border-radius: 34px 34px 2px 2px;
+  background:
+    repeating-conic-gradient(from 180deg at 50% 100%, rgba(8, 5, 13, 0.9) 0 1.5deg, transparent 1.5deg 22deg),
+    repeating-radial-gradient(circle at 50% 100%, transparent 0 6px, rgba(8, 5, 13, 0.85) 6px 7px),
+    radial-gradient(ellipse at 50% 100%, #fff0b8, var(--candle) 40%, var(--pumpkin) 72%, #8a3506);
+  box-shadow: 0 0 14px rgba(255, 140, 40, 0.7), inset 0 0 0 2px #2b2239;
+  animation: window-flicker 2.4s ease-in-out infinite;
 }
 .manor-lamp {
   position: absolute;
@@ -233,7 +283,7 @@
   margin-left: -100px;
   border-radius: 3px;
   background: #2f2640;
-  box-shadow: 0 8px 0 -1px #281f36, 0 16px 0 -2px #221a30, 0 -18px 40px rgba(255, 140, 40, 0.16);
+  box-shadow: 0 8px 0 -1px #281f36, 0 16px 0 -2px #221a30, 0 -18px 40px rgba(255, 140, 40, 0.14), 0 -22px 34px rgba(28, 231, 131, 0.26);
 }
 .just-arrived {
   margin-top: 16px;
@@ -1016,7 +1066,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .grain, .tv-static, .moon .cloud, .candle .flame, .candle .glow, .win.lit, .gates-stroll, .walker, .walker-svg, .walker .leg, .cat .tail, .cat .head, .cat .eyes ellipse, .ghost .arm, .ghost .face ellipse, .pumpkin .stem, .pumpkin .face, .candies i, .candy-sub, .bat, .bat .wing, .sec-hand, .manor-lamp, .manor-door::before { animation: none; }
+  .grain, .tv-static, .moon .cloud, .candle .flame, .candle .glow, .win.lit, .gates-stroll, .walker, .walker-svg, .walker .leg, .cat .tail, .cat .head, .cat .eyes ellipse, .ghost .arm, .ghost .face ellipse, .pumpkin .stem, .pumpkin .face, .candies i, .candy-sub, .bat, .bat .wing, .sec-hand, .manor-lamp, .manor-door .fanlight, .manor-door .leaf, .manor-door .hall { animation: none; }
+  .manor-door .leaf.l { transform: perspective(240px) rotateY(-13deg); }
+  .manor-door .leaf.r { transform: perspective(240px) rotateY(13deg); }
+  .manor-door .hall { opacity: 0; }
   .gates-stroll { transform: translateX(96px) scale(0.26); }
   .candies i { opacity: 0; }
   .canvas img, .canvas video, .varnish, .ambient { animation: none; }
