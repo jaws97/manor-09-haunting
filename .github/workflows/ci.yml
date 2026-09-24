@@ -1,0 +1,43 @@
+name: CI
+
+# The show is the deliverable and pushes to main deploy it, so every pull
+# request and every commit that lands on main gets typechecked, linted and
+# built before it can reach the projector.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# A newer push to the same branch makes the older run pointless.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Typecheck, lint, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # ci, not install: build from the lockfile exactly, and fail if it has
+      # drifted from package.json rather than quietly rewriting it.
+      - name: Install
+        run: npm ci
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npm run lint
+
+      # No secrets: the build must not need HOST_PIN or the Supabase keys.
+      # Those are read at request time, and a build that starts needing them
+      # would fail here rather than on the night.
+      - name: Build
+        run: npm run build
