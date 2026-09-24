@@ -31,6 +31,7 @@
 .phases button { width: 100%; text-align: left; }
 .phases li { counter-increment: p; }
 .phases button::before { content: counter(p) ". "; color: var(--pumpkin); }
+.phases button small { display: block; margin-top: 4px; font-family: var(--serif); font-style: italic; text-transform: none; letter-spacing: 0; font-size: 15px; line-height: 1.3; color: var(--ink-soft, #cbbfa8); }
 .host .grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
 .host .grid button { padding: 12px 0; }
 .host .row { display: grid; gap: 8px; }

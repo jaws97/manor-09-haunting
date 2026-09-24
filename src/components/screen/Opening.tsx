@@ -181,6 +181,7 @@ export function Ident({ muted, onDone }: { muted: boolean; onDone: () => void })
           onEnded={ended}
           onError={() => setFailed(true)}
         />
+        <div className="ident-caption">present</div>
         {noise && <div className="tv-static" aria-hidden="true" />}
       </div>
     );
@@ -218,7 +219,7 @@ export function TitleCard() {
         <Candle h={150} />
       </div>
       <div className="season-card">
-        <span>Manor 09 presents</span>
+        <span>A Manor 09 production</span>
         <b>The Haunting</b>
         <em>Twenty-seven residents. Not one of them at rest.</em>
       </div>

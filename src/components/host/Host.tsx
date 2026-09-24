@@ -1,7 +1,7 @@
 "use client";
 
 import { pad2, residents } from "@/data/residents";
-import { PHASES, PHASE_LABEL, ROOMS, useShow, type AnnounceCue } from "@/lib/show";
+import { PHASES, PHASE_LABEL, PHASE_NOTE, ROOMS, useShow, type AnnounceCue } from "@/lib/show";
 
 const ANNOUNCE: [AnnounceCue, string][] = [
   ["gates", "“Welcome… present your invitation”"],
@@ -56,6 +56,7 @@ export function Host() {
                 onClick={() => dispatch({ type: "goto", phase: p })}
               >
                 {PHASE_LABEL[p]}
+                {PHASE_NOTE[p] && <small>{PHASE_NOTE[p]}</small>}
               </button>
             </li>
           ))}

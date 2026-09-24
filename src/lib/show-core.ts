@@ -31,6 +31,11 @@ export const PHASE_LABEL: Record<Phase, string> = {
   guestbook: "The guest book",
 };
 
+/** What the keeper should know before pressing a phase; shown under it on the remote. */
+export const PHASE_NOTE: Partial<Record<Phase, string>> = {
+  ident: "Opens the show, then runs on by itself: the storm, midnight, the title card",
+};
+
 /** Rooms in the manor: 8 floors of 15 windows. The residents keep rooms 1..27, the top floors. */
 export const ROOMS = 120;
 export const PER_FLOOR = 15;
