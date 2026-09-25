@@ -150,17 +150,43 @@ export function Midnight({ onDone }: { onDone: () => void }) {
 
 /* ------------------------------------------------------------------ ident */
 
-/** The team's ident film, haunted cut (public/media/ident.mp4, 8s, with sound), on a haunted television. If it can't play, the title card stands in. */
+/** how long the frozen last frame holds the team's name before the channel changes, in ms */
+const IDENT_HOLD = 2600;
+
+/**
+ * The team's ident film, haunted cut (public/media/ident.mp4, 8s, with sound), on a haunted
+ * television: the three of them in costume in front of the manor, posing, until the giant candle
+ * blows up in their faces, as it does at every show. It freezes on the aftermath and the team's
+ * name slams down on the frozen frame with an organ sting; the name is HTML, so the film never has
+ * to hold letters steady while people move in front of them. If it can't play, the title card
+ * stands in.
+ */
 export function Ident({ muted, onDone }: { muted: boolean; onDone: () => void }) {
   const [failed, setFailed] = useState(false);
   const [noise, setNoise] = useState(true);
+  // the film has played out and holds its last frame under the name
+  const [frozen, setFrozen] = useState(false);
   const video = useRef<HTMLVideoElement>(null);
+  const finish = useEffectEvent(onDone);
 
   useCue(() => sfx.staticBurst(0.5), 40);
   useEffect(() => {
     const t = setTimeout(() => setNoise(false), 600);
     return () => clearTimeout(t);
   }, []);
+
+  useEffect(() => {
+    if (!frozen) return;
+    sfx.organ(true);
+    const t = [
+      setTimeout(() => {
+        setNoise(true);
+        sfx.staticBurst(0.4);
+      }, IDENT_HOLD),
+      setTimeout(() => finish(), IDENT_HOLD + 450),
+    ];
+    return () => t.forEach(clearTimeout);
+  }, [frozen]);
 
   useEffect(() => {
     const v = video.current;
@@ -173,15 +199,9 @@ export function Ident({ muted, onDone }: { muted: boolean; onDone: () => void })
     });
   }, [muted]);
 
-  const ended = () => {
-    setNoise(true);
-    sfx.staticBurst(0.4);
-    setTimeout(onDone, 450);
-  };
-
   if (!failed)
     return (
-      <div className="ident">
+      <div className={`ident${frozen ? " frozen" : ""}`}>
         <video
           ref={video}
           className="ident-video"
@@ -189,10 +209,17 @@ export function Ident({ muted, onDone }: { muted: boolean; onDone: () => void })
           poster="/media/ident.webp"
           playsInline
           preload="auto"
-          onEnded={ended}
+          onEnded={() => setFrozen(true)}
           onError={() => setFailed(true)}
         />
-        <div className="ident-caption">present</div>
+        {frozen && (
+          <>
+            {/* the freeze: a flash, and the top of the frame dimmed so the name reads over the manor */}
+            <i className="ident-freeze" aria-hidden="true" />
+            <div className="ident-name">{event.team}</div>
+            <div className="ident-caption">present</div>
+          </>
+        )}
         {noise && <div className="tv-static" aria-hidden="true" />}
       </div>
     );
@@ -205,7 +232,7 @@ function IdentCard({ onDone }: { onDone: () => void }) {
   return (
     <div className="ident">
       <div className="ident-mark">
-        <span>Party People</span>
+        <span>{event.team}</span>
         <b>present</b>
       </div>
     </div>

@@ -4,6 +4,8 @@ import { ResidentCountInWords } from "./residents";
 const showHalves = ["Hulu", "ween"] as const;
 
 export const event = {
+  /** the three who make these nights; their ident opens the show */
+  team: "Party People",
   manor: "Manor 09",
   show: showHalves.join(""),
   showHalves,
