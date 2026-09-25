@@ -2,8 +2,9 @@
 
 /**
  * Phone-side sound for the invitation, synthesised from filtered noise so the
- * gate works before any audio asset exists: the envelope feeding through the
- * letter slot, the wax stamp, paper tearing fibre by fibre, the wax snapping.
+ * gate works before any audio asset exists: paper tearing fibre by fibre, the
+ * wax snapping, the letter sliding out. (The cat that brings the invitation
+ * makes its own sound, in its clip.)
  *
  * Phones only let a page start audio after a COMPLETED gesture (tap / touchend),
  * and the audio hardware then takes a few hundred ms to wake. Unlocking at the
@@ -79,25 +80,6 @@ function thump(freq: number, to: number, duration: number, gain: number, at = 0)
   o.start(t);
   o.stop(t + duration + 0.02);
 }
-
-/* --------------------------------------------------------------- arrival */
-
-/** the envelope dragging through the letter slot, one push at a time */
-export const paperStep = () => {
-  burst(0.05 + Math.random() * 0.03, 0.3, 1400 + Math.random() * 900, 0.9);
-  burst(0.03, 0.15, 300, 0.7);
-};
-/** the brass flap of the slot clacking shut */
-export const slotClack = () => {
-  burst(0.05, 0.6, 3200, 2.5);
-  thump(900, 300, 0.06, 0.35);
-  burst(0.12, 0.25, 1800, 4, 0.02);
-};
-/** the wax stamp coming down */
-export const stamp = () => {
-  thump(120, 40, 0.22, 0.9);
-  burst(0.08, 0.5, 900);
-};
 
 /* ------------------------------------------------------------------ tear */
 

@@ -22,15 +22,27 @@
   --bat: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 50'><g fill='%23000'><path d='M50 25 C40 5, 20 0, 2 12 C12 16, 14 22, 10 30 C20 26, 30 28, 36 34 C40 30, 46 28, 50 25Z'/><path d='M50 25 C60 5, 80 0, 98 12 C88 16, 86 22, 90 30 C80 26, 70 28, 64 34 C60 30, 54 28, 50 25Z'/><ellipse cx='50' cy='27' rx='7' ry='10'/></g></svg>");
 }
 
+/* ---------- the manor's cat: on the gatehouse wall, then at your feet ---------- */
+.cat-scene {
+  position: relative;
+  flex: none;
+  width: min(100vw, 460px);
+  aspect-ratio: 1;
+  /* bleeds to a phone's edges; the preview card, and later the envelope, tuck over the cobbles */
+  margin: -6px 0 -62px;
+  background: url(/media/cat/wall.webp) center / cover no-repeat, #0a0710;
+  mask-image: linear-gradient(180deg, #000 96%, transparent);
+}
+.cat-scene > * { position: absolute; inset: 0; width: 100%; height: 100%; }
+.cat-clip { object-fit: cover; opacity: 0; }
+.cat-waiting { background: url(/media/cat/waiting.webp) center / cover no-repeat; opacity: 0; }
+.cat-scene.walking .cat-clip,
+.cat-scene.waiting .cat-waiting { opacity: 1; }
+/* with no clip to play the cat fades in at your feet; the handover itself is an instant swap */
+.cat-scene.fading .cat-waiting { transition: opacity 0.7s ease; }
+
 /* ---------- the gatehouse ---------- */
 .gh { width: min(100%, 380px); display: grid; gap: 16px; }
-.gh-hero {
-  position: relative;
-  aspect-ratio: 4 / 3;
-  margin: -6px -16px -46px; /* bleeds to the screen edges and tucks under the preview */
-  background: url(/media/gatehouse.webp) center / cover no-repeat, radial-gradient(ellipse at 50% 40%, #2a1a3f, #0a0710 75%);
-  mask-image: linear-gradient(180deg, #000 62%, transparent 100%);
-}
 .gh-preview {
   position: relative;
   display: grid;
@@ -138,10 +150,8 @@
   -webkit-touch-callout: none;
 }
 .inv.cast { --paper: #2a0a12; --paper-2: #3a1019; --paper-fibre: #9a7a80; --gilt-ink: #f1d383; }
-/* room above for the letter to rise, and for the letter slot to sit on top while it arrives */
-.env-feed { position: relative; margin-top: 110px; }
-/* while arriving, nothing above the slot exists yet: the paper is still inside the door */
-.inv.arriving .env-feed { clip-path: inset(0 -60px -160px -60px); }
+/* the letter rises out of it over the cat's picture */
+.env-feed { position: relative; }
 .env-paper {
   position: relative;
   width: 100%;
@@ -150,71 +160,12 @@
   filter: drop-shadow(0 22px 34px rgba(0, 0, 0, 0.6));
   animation: env-appear 0.5s ease both;
 }
-.inv.arriving .env-paper { animation: none; }
+/* invisible where it will come to rest until the cat has set its own envelope down, then it takes over from that one */
+.inv.dv-wait .env-paper { opacity: 0; }
+/* a delivered envelope must not fade in a second time once it has arrived */
+.inv.posted .env-paper { animation: none; }
 @keyframes env-appear {
   from { opacity: 0; }
-}
-
-/* ---------- the letter slot the envelope comes through ---------- */
-.letterbox {
-  position: absolute;
-  z-index: 8;
-  left: -10px;
-  right: -10px;
-  top: -6px;
-  height: 46px;
-  border-radius: 8px;
-  background:
-    linear-gradient(90deg, rgba(255, 255, 255, 0.12), transparent 30%, transparent 70%, rgba(255, 255, 255, 0.12)),
-    linear-gradient(180deg, #d4a640, #8a6a1e 55%, #5a4310);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.25) inset, 0 -1px 0 rgba(0, 0, 0, 0.6) inset, 0 10px 22px rgba(0, 0, 0, 0.6);
-  animation: lb-in 0.3s cubic-bezier(0.2, 0.9, 0.25, 1) both;
-}
-@keyframes lb-in {
-  from { opacity: 0; transform: translateY(-12px); }
-}
-.letterbox.drop,
-.letterbox.wax { animation: lb-out 0.5s 0.3s ease-in forwards; }
-@keyframes lb-out {
-  to { opacity: 0; transform: translateY(-18px); }
-}
-.lb-slot {
-  position: absolute;
-  left: 22px;
-  right: 22px;
-  top: 50%;
-  height: 12px;
-  transform: translateY(-50%);
-  border-radius: 3px;
-  background: #050303;
-  box-shadow: inset 0 2px 3px #000, 0 1px 0 rgba(255, 255, 255, 0.15);
-}
-/* the brass flap over the slot, pushed open by the paper and clacking shut after it */
-.lb-flap {
-  position: absolute;
-  left: 22px;
-  right: 22px;
-  top: calc(50% - 8px);
-  height: 16px;
-  border-radius: 3px;
-  background: linear-gradient(180deg, #f1d383, #b98a24);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-  transform-origin: 50% 0;
-  transform: rotateX(-62deg);
-  transition: transform 0.18s cubic-bezier(0.5, 0, 0.9, 0.5);
-}
-.letterbox.drop .lb-flap,
-.letterbox.wax .lb-flap { transform: rotateX(0); }
-.letterbox b {
-  position: absolute;
-  right: 26px;
-  bottom: 4px;
-  font-family: var(--display);
-  font-size: 9px;
-  letter-spacing: 0.3em;
-  text-transform: uppercase;
-  color: rgba(42, 26, 16, 0.7);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.25);
 }
 
 /* ---------- the body: the pocket, and the letter inside it ---------- */
@@ -372,18 +323,6 @@
 }
 .seal-half.top { bottom: -50px; z-index: 5; clip-path: inset(0 0 50% 0); }
 .seal-half.bottom { top: -50px; z-index: 3; clip-path: inset(50% 0 0 0); }
-.inv.pb-feed .seal-half,
-.inv.pb-drop .seal-half { opacity: 0; }
-.inv.pb-wax .seal-half { animation: wax-drop 0.52s cubic-bezier(0.5, 0, 0.9, 0.5) both, wax-squash 0.35s 0.52s ease-out both; }
-@keyframes wax-drop {
-  from { opacity: 0; transform: translateY(-140px) scale(2.2); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
-}
-@keyframes wax-squash {
-  0% { transform: scale(1.25, 0.8); }
-  60% { transform: scale(0.95, 1.08); }
-  100% { transform: scale(1); }
-}
 .seal-svg { width: 100%; height: 100%; overflow: visible; }
 .seal-svg .ring { fill: none; stroke: rgba(255, 200, 200, 0.35); stroke-width: 2; }
 .seal-svg .mono { font-family: var(--display); font-weight: 800; font-size: 36px; fill: #ffd9d6; opacity: 0.9; }
@@ -562,7 +501,7 @@
 .scare.bare .scare-tear { background-color: #000; }
 
 @media (prefers-reduced-motion: reduce) {
-  .env-paper, .env-stamp, .pulse-hint, .env-handle.nudge, .letterbox, .lb-flap, .bat-out, .inv.open .inv-after, .inv.pb-wax .seal-half { animation: none; opacity: 1; }
+  .env-paper, .env-stamp, .pulse-hint, .env-handle.nudge, .bat-out, .inv.open .inv-after { animation: none; opacity: 1; }
   .inv.open .env-stamp { opacity: 1; }
   .env-letter { transition: none; }
   /* still there, still loud, but it doesn't lunge, shake or flash */

@@ -1,7 +1,7 @@
 "use client";
 
 import { animate, motion, useMotionValue, useMotionValueEvent, useTransform } from "motion/react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { post, saveInvite, syncEnter, useInvite, type InviteData } from "@/lib/invite";
 import {
@@ -10,14 +10,11 @@ import {
   buzz,
   crackTick,
   flutter,
-  paperStep,
   ripFinish,
   ripTick,
   rustle,
   scream,
   sealSnap,
-  slotClack,
-  stamp,
   unlockSeal,
 } from "@/lib/seal";
 import { floorOf, roomLabel, wingOf } from "@/lib/show-core";
@@ -45,9 +42,10 @@ const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export function InvitePage({ cast }: { cast: string[] }) {
   const invite = useInvite();
-  // true only for an invitation summoned on this page load: it comes in through the letter slot.
-  // A reloaded invitation is already in the guest's hand, so it just appears.
+  // true only for an invitation summoned on this page load: the cat brings it. A reloaded
+  // invitation is already in the guest's hand, so it just appears.
   const [fresh, setFresh] = useState(false);
+  const cat = useCat(invite);
   useEffect(() => armSealOnFirstTouch(), []);
   if (invite === undefined) return <main className="invite-page" />;
   return (
@@ -56,10 +54,19 @@ export function InvitePage({ cast }: { cast: string[] }) {
         <b>Manor 09</b>
         <span>You are summoned · 7 October</span>
       </header>
+      {/* one picture for the gatehouse and the invitation, so it never jumps between the two */}
+      <CatScene
+        setFrame={cat.setFrame}
+        setVideo={cat.setVideo}
+        clip={cat.clip}
+        scene={cat.scene}
+        fading={cat.fading}
+        onPlaying={cat.playing}
+      />
       {invite ? (
-        <Invitation invite={invite} fresh={fresh} />
+        <Invitation invite={invite} fresh={fresh} cat={cat} />
       ) : (
-        <Gatehouse cast={cast} onIssued={() => setFresh(true)} />
+        <Gatehouse cast={cast} onSummon={cat.walk} onFailed={cat.reset} onIssued={() => setFresh(true)} />
       )}
     </main>
   );
@@ -67,7 +74,17 @@ export function InvitePage({ cast }: { cast: string[] }) {
 
 /* -------------------------------------------------------------- gatehouse */
 
-function Gatehouse({ cast, onIssued }: { cast: string[]; onIssued: () => void }) {
+function Gatehouse({
+  cast,
+  onSummon,
+  onFailed,
+  onIssued,
+}: {
+  cast: string[];
+  onSummon: () => void;
+  onFailed: () => void;
+  onIssued: () => void;
+}) {
   const [name, setName] = useState("");
   const [state, setState] = useState<"idle" | "busy" | "failed">("idle");
   const ok = name.trim().length >= 2 && state !== "busy";
@@ -75,7 +92,9 @@ function Gatehouse({ cast, onIssued }: { cast: string[]; onIssued: () => void })
   const issue = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!ok) return;
-    unlockSeal(); // this tap is the gesture that lets the letter slot make a sound
+    // this tap is the gesture that lets the phone make sounds, and the cat sets off inside it
+    unlockSeal();
+    onSummon();
     setState("busy");
     try {
       const res = await post("/api/invite", { name });
@@ -84,6 +103,7 @@ function Gatehouse({ cast, onIssued }: { cast: string[]; onIssued: () => void })
       onIssued();
       saveInvite(issued);
     } catch {
+      onFailed();
       setState("failed");
     }
   };
@@ -93,9 +113,6 @@ function Gatehouse({ cast, onIssued }: { cast: string[]; onIssued: () => void })
 
   return (
     <div className="gh">
-      {/* the gatehouse: generated art, no text in it, fading into the page */}
-      <div className="gh-hero" role="img" aria-label="The gatehouse of Manor 09 at night" />
-
       {/* the invitation fills itself in as the guest types */}
       <div className={`gh-preview${isCast ? " cast" : ""}${typed ? " live" : ""}`} aria-hidden="true">
         <div>
@@ -128,13 +145,13 @@ function Gatehouse({ cast, onIssued }: { cast: string[]; onIssued: () => void })
         <button type="submit" disabled={!ok}>
           {state === "busy" ? "Summoning…" : "Summon my invitation"}
         </button>
-        {state === "failed" && <p role="alert">Nothing came through the slot. Try once more.</p>}
+        {state === "failed" && <p role="alert">The cat came back without it. Try once more.</p>}
       </form>
 
       <ol className="gh-steps">
         <li>
           <b>Your invitation arrives</b>
-          <span>It slides in through the letter slot, sealed in wax. A room is chosen for you; the manor does not take requests.</span>
+          <span>The manor&apos;s cat brings it to you, sealed in wax. A room is chosen for you; the manor does not take requests.</span>
         </li>
         <li>
           <b>Show it at the gate</b>
@@ -150,59 +167,224 @@ function Gatehouse({ cast, onIssued }: { cast: string[]; onIssued: () => void })
   );
 }
 
-/* ------------------------------------------------------------- letterbox */
-
-const FEED_STEPS = 14;
+/* ---------------------------------------------------------------- the cat */
 
 /**
- * The envelope coming in through the letter slot: the brass flap opens, the
- * paper is pushed through in nudges (a scrape and a buzz each), it drops with
- * a bounce as the flap clacks shut, and then the wax comes down on it.
+ * The manor's black cat has been sitting on the gatehouse wall with an
+ * envelope in its mouth all along. Summon an invitation and it jumps down,
+ * trots up to you through the fog, sets the envelope down at your feet and
+ * sits looking up at you: one generated clip that starts on the gatehouse
+ * picture itself, so the picture simply starts moving. Then the envelope on
+ * the cobbles is swapped for the real one, which lifts off the ground to you.
  */
-function usePostbox(deliver: boolean) {
-  const [stage, setStage] = useState<"feed" | "drop" | "wax" | "done">(deliver ? "feed" : "done");
-  const feed = useMotionValue(deliver ? 0 : 1);
-  const drop = useMotionValue(0);
-  const y = useTransform(() => `calc(${((feed.get() - 1) * 100).toFixed(2)}% + ${drop.get().toFixed(1)}px)`);
+const CAT = {
+  clip: "/media/cat/delivery.mp4",
+  /**
+   * The clip's last frame with the envelope taken off the cobbles: sitting at your feet. (Its first
+   * frame, on the wall with the envelope in its mouth, is the picture's background in invite.css.)
+   */
+  waiting: "/media/cat/waiting.webp",
+  /** the clip's length in ms: if it stalls, the envelope still arrives soon after this */
+  length: 5040,
+  /**
+   * Where the envelope lies in the last frame, as fractions of the square frame. It lies flat on the
+   * cobbles, so it is seen tilted back (degrees), a touch narrower at the far edge.
+   */
+  envelope: { x: 0.505, y: 0.948, width: 0.181, tilt: 59 },
+};
 
-  // Runs once on mount (motion values are stable). Strict mode runs it twice in dev: the first run is
-  // cancelled by its cleanup before it moves anything. Stage changes must NOT re-run it.
+/** on the wall with the envelope, walking up to you (the clip), or sitting at your feet */
+type Scene = "wall" | "walking" | "waiting";
+
+/**
+ * The cat's side of the delivery. The clip is fetched whole while the guest
+ * types their name: phones won't buffer a video before it is played, and it
+ * has to start the instant they summon, inside the tap, which is also the only
+ * way it is allowed to play with sound.
+ */
+function useCat(invite: InviteData | null | undefined) {
+  // the picture, held as state (a callback ref) so the envelope can measure it; its clip, which only
+  // event handlers touch
+  const [frame, setFrame] = useState<HTMLDivElement | null>(null);
+  const video = useRef<HTMLVideoElement | null>(null);
+  const setVideo = useCallback((el: HTMLVideoElement | null) => {
+    video.current = el;
+  }, []);
+  const [clip, setClip] = useState<string | null>(null);
+  // "set-off" from the tap until the clip is actually playing, "walking" while it plays, "arrived"
+  // once the envelope has been handed over
+  const [trip, setTrip] = useState<"none" | "set-off" | "walking" | "arrived">("none");
+  // with no clip to play (bad signal, reduced motion) the cat simply fades in at your feet
+  const [fading, setFading] = useState(false);
+  const journey = useRef<Promise<unknown> | null>(null);
+
+  // With no invitation the cat is on the wall, holding the next one; with one in hand it sits at your
+  // feet, whether it brought it just now or before a reload.
+  const scene: Scene = trip === "walking" ? "walking" : invite && trip !== "set-off" ? "waiting" : "wall";
+
   useEffect(() => {
-    if (feed.get() === 1) return; // nothing to deliver
+    // decoded ahead, so the swap to it at the handover is instant
+    const still = new Image();
+    still.src = CAT.waiting;
+    still.decode().catch(() => {});
+    if (reduced()) return;
+    const ctrl = new AbortController();
+    let url: string | undefined;
+    fetch(CAT.clip, { signal: ctrl.signal })
+      .then((r) => (r.ok ? r.blob() : Promise.reject(new Error(String(r.status)))))
+      .then((b) => setClip((url = URL.createObjectURL(b))))
+      .catch(() => {});
+    return () => {
+      ctrl.abort();
+      if (url) URL.revokeObjectURL(url);
+    };
+  }, []);
+
+  /** the cat is simply there, without the walk */
+  const appear = () => {
+    setFading(true);
+    setTrip("arrived");
+    return wait(reduced() ? 0 : 700);
+  };
+
+  /** Sets off: called inside the summon tap. */
+  const walk = () => {
+    scrollTo({ top: 0, behavior: "smooth" });
+    const v = video.current;
+    if (!clip || !v || reduced()) {
+      journey.current = appear();
+      return;
+    }
+    setFading(false);
+    setTrip("set-off");
+    v.muted = false;
+    v.currentTime = 0;
+    const ended = new Promise<void>((done) => v.addEventListener("ended", () => done(), { once: true }));
+    journey.current = v.play().then(
+      // a clip that stalls must not keep the envelope from ever arriving
+      () => Promise.race([ended, wait(CAT.length + 2500)]),
+      appear,
+    );
+  };
+
+  /** The invitation couldn't be issued: back up on the wall. */
+  const reset = useCallback(() => {
+    journey.current = null;
+    video.current?.pause();
+    setTrip("none");
+  }, []);
+  /** resolves when the envelope is lying at your feet */
+  const arrived = useCallback(() => journey.current ?? Promise.resolve(), []);
+  /** the envelope on the cobbles is taken away; the real one is put in its place at the same instant */
+  const settle = useCallback(() => setTrip("arrived"), []);
+  const playing = useCallback(() => setTrip((t) => (t === "set-off" ? "walking" : t)), []);
+
+  return { frame, setFrame, setVideo, clip, scene, fading, walk, reset, arrived, settle, playing };
+}
+
+type Cat = ReturnType<typeof useCat>;
+
+function CatScene({
+  setFrame,
+  setVideo,
+  clip,
+  scene,
+  fading,
+  onPlaying,
+}: {
+  setFrame: (el: HTMLDivElement | null) => void;
+  setVideo: (el: HTMLVideoElement | null) => void;
+  clip: string | null;
+  scene: Scene;
+  fading: boolean;
+  onPlaying: () => void;
+}) {
+  return (
+    <div
+      ref={setFrame}
+      className={`cat-scene ${scene}${fading ? " fading" : ""}`}
+      role="img"
+      aria-label="The gatehouse of Manor 09 at night, and the manor's black cat"
+    >
+      <video
+        ref={setVideo}
+        className="cat-clip"
+        src={clip ?? undefined}
+        muted
+        playsInline
+        preload="auto"
+        disableRemotePlayback
+        onPlaying={onPlaying}
+        aria-hidden="true"
+      />
+      <i className="cat-waiting" />
+    </div>
+  );
+}
+
+/**
+ * The real envelope takes over from the one the cat set down: it appears
+ * exactly where that one lies, flat on the cobbles, as the picture swaps to
+ * the same frame without it, and then lifts off the ground to you, turning up
+ * to face you as it comes.
+ */
+function useDelivery(
+  deliver: boolean,
+  cat: Pick<Cat, "arrived" | "settle" | "frame">,
+  paper: React.RefObject<HTMLDivElement | null>,
+) {
+  const [stage, setStage] = useState<"wait" | "lift" | "done">(deliver ? "wait" : "done");
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  const scale = useMotionValue(1);
+  const tiltX = useMotionValue(0);
+  const turn = useMotionValue(0);
+  const { arrived, settle, frame } = cat;
+
+  // Runs once on mount (everything it depends on is stable). Strict mode runs it twice in dev: the
+  // first run is cancelled by its cleanup before it moves anything.
+  useEffect(() => {
+    if (!deliver) return;
     let dead = false;
     (async () => {
-      if (reduced()) {
-        feed.set(1);
-        return setStage("done");
-      }
-      scrollTo({ top: 0, behavior: "smooth" });
-      await wait(450); // the flap creaks open first
-      for (let i = 1; i <= FEED_STEPS && !dead; i++) {
-        paperStep();
-        buzz(6);
-        await animate(feed, i / FEED_STEPS, { duration: 0.07, ease: "easeOut" });
-        await wait(35 + Math.random() * 55);
-      }
-      if (dead) return;
-      setStage("drop");
-      slotClack();
-      buzz([12, 20, 12]);
-      await Promise.all([animate(drop, 10, { type: "spring", stiffness: 360, damping: 13 }), wait(520)]);
-      if (dead) return;
-      setStage("wax");
-      await wait(520); // the wax is in the air
-      if (dead) return;
-      stamp();
-      buzz([30, 20, 40]);
-      await wait(420);
+      await arrived();
+      const el = paper.current;
+      const box = frame;
+      if (dead || !el || !box) return;
+      // measured where it will come to rest (it has been there, invisible, all along), then put
+      // where the cat left it
+      const rest = el.getBoundingClientRect();
+      const f = box.getBoundingClientRect();
+      const e = CAT.envelope;
+      const x0 = f.left + e.x * f.width - (rest.left + rest.width / 2);
+      const y0 = f.top + e.y * f.height - (rest.top + rest.height / 2);
+      const s0 = (e.width * f.width) / rest.width;
+      settle();
+      if (reduced()) return setStage("done");
+      x.set(x0);
+      y.set(y0);
+      scale.set(s0);
+      tiltX.set(e.tilt);
+      setStage("lift");
+      rustle();
+      buzz(12);
+      // off the ground first, then up to you, a little past and back
+      const t = { duration: 1.05, times: [0, 0.22, 0.82, 1] };
+      await Promise.all([
+        animate(x, [x0, x0, 0, 0], t),
+        animate(y, [y0, y0 - 12, 3, 0], t),
+        animate(scale, [s0, s0 * 1.12, 1.02, 1], t),
+        animate(tiltX, [e.tilt, e.tilt - 12, -5, 0], t),
+        animate(turn, [0, -3, 1.5, 0], t),
+      ]);
       if (!dead) setStage("done");
     })();
     return () => {
       dead = true;
     };
-  }, [feed, drop]);
+  }, [deliver, arrived, settle, frame, paper, x, y, scale, tiltX, turn]);
 
-  return { stage, y };
+  return { stage, style: { x, y, scale, rotateX: tiltX, rotate: turn, transformPerspective: 1300 } };
 }
 
 /* ------------------------------------------------------------- invitation */
@@ -219,10 +401,11 @@ function usePostbox(deliver: boolean) {
  * there comes out, straight at them. Only on a fresh tear: a reloaded, already
  * opened invitation never does it again.
  */
-function Invitation({ invite, fresh }: { invite: InviteData; fresh: boolean }) {
+function Invitation({ invite, fresh, cat }: { invite: InviteData; fresh: boolean; cat: Cat }) {
   const torn = invite.enteredAt != null;
-  const postbox = usePostbox(fresh && !torn);
-  const ready = postbox.stage === "done";
+  const paperRef = useRef<HTMLDivElement>(null);
+  const delivery = useDelivery(fresh && !torn, cat, paperRef);
+  const ready = delivery.stage === "done";
   const progress = useMotionValue(torn ? 1 : 0);
   const seamRef = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
@@ -378,19 +561,11 @@ function Invitation({ invite, fresh }: { invite: InviteData; fresh: boolean }) {
 
   return (
     <div
-      className={`inv${invite.cast ? " cast" : ""}${open ? " open" : ""}${scare === "gone" ? " settled" : ""}${!ready ? " arriving" : ""} pb-${postbox.stage}`}
+      className={`inv${invite.cast ? " cast" : ""}${open ? " open" : ""}${scare === "gone" ? " settled" : ""}${fresh ? " posted" : ""} dv-${delivery.stage}`}
     >
       {scare === "out" && createPortal(<JumpScare art={scareArt} />, document.body)}
-      {/* the clip lives on this static wrapper: put on the moving paper it would travel with it */}
       <div className="env-feed">
-        {postbox.stage !== "done" && (
-          <div className={`letterbox ${postbox.stage}`} aria-hidden="true">
-            <i className="lb-flap" />
-            <span className="lb-slot" />
-            <b>Manor 09</b>
-          </div>
-        )}
-        <motion.div className="env-paper" style={{ y: postbox.y }}>
+        <motion.div ref={paperRef} className="env-paper" style={delivery.style}>
           {/* roughens the torn edges so the paper shows fibres instead of a vector-clean cut */}
           <svg width="0" height="0" style={{ position: "absolute" }} aria-hidden="true">
             <filter id="inv-rough" x="-5%" y="-60%" width="110%" height="220%">

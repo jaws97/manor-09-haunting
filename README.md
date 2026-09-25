@@ -14,7 +14,7 @@ npm run dev
 | `/` | everyone, before the night | The gate: countdown, ticker, 28 dust-sheeted frames. Titles and portraits stay under the sheets until `revealAt` in `src/data/event.ts` (`NEXT_PUBLIC_REVEAL=1` previews the reveal). |
 | `/screen` | projector laptop (PIN) | The show. Always opens on the gates (QR) screen. Click once to wake the manor (sound + fullscreen): the gates then play their own soundscape for as long as they are up. `←` `→` / space step the show if the remote dies; `Home` returns to the gates; `c` toggles the candy break. After a mid-show refresh, jump back from `/host`. |
 | `/host` | keeper's phone (PIN) | Remote: next/back, candy break (a snipe over the current phase), jump to phase or portrait, keeper's cues, mute, rehearsal tools, reset. |
-| `/invite` | guests | The gatehouse → a sealed invitation → the gatekeeper tears it open along the top, through the wax, and a moment later whatever was living in the envelope comes out at the guest (a one-second jump scare, then the stamp and the confetti). Lights the guest's window in the manor on `/screen`. |
+| `/invite` | guests | The gatehouse, where the manor’s black cat jumps down off the wall and brings the guest a sealed invitation → the gatekeeper tears it open along the top, through the wax, and a moment later whatever was living in the envelope comes out at the guest (a one-second jump scare, then the stamp and the confetti). Lights the guest's window in the manor on `/screen`. |
 | `/join` | guests, once inside | The parlour: SCREAM button (tap, or the microphone), whispers and emoji that appear live on the big screen, spirit photographs. |
 
 **PIN:** set `HOST_PIN` in `.env.local` (required in production). In development it falls back to `0909`.
