@@ -1,4 +1,4 @@
-import { residents, type Resident } from "./residents";
+import { residents, ResidentCountInWords, type Resident } from "./residents";
 
 /**
  * The keeper's script. Each line has an id; if `public/media/vo/<id>.mp3`
@@ -19,7 +19,7 @@ export const showCues = {
   },
   title: {
     id: "cue-title",
-    text: "A Manor Oh Nine production... The Haunting. Twenty-eight residents. Not one of them at rest.",
+    text: `A Manor Oh Nine production... The Haunting. ${ResidentCountInWords} residents. Not one of them at rest.`,
   },
   seance: {
     id: "cue-seance",
@@ -27,7 +27,7 @@ export const showCues = {
   },
   seanceAfter: {
     id: "cue-seance-after",
-    text: "Twenty-eight spirits. All born in September. All of them... restless. Let us meet them.",
+    text: `${ResidentCountInWords} spirits. All born in September. All of them... restless. Let us meet them.`,
   },
   gallery: { id: "cue-gallery", text: "Tonight's residents. Hold your screams. Actually... don't." },
   scream: {

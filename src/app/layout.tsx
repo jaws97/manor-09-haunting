@@ -1,6 +1,7 @@
 import { Analytics } from "@vercel/analytics/next";
 import type { Metadata, Viewport } from "next";
 import { Grenze_Gotisch, IM_Fell_English, Pinyon_Script } from "next/font/google";
+import { event } from "@/data/event";
 import "./globals.css";
 
 const display = Grenze_Gotisch({
@@ -23,7 +24,7 @@ const script = Pinyon_Script({
 
 export const metadata: Metadata = {
   title: "Manor 09 · The Haunting",
-  description: "You are cordially summoned. Twenty-seven residents. One night. Not one of them at rest.",
+  description: `You are cordially summoned. ${event.tagline}`,
   robots: { index: false, follow: false },
 };
 
