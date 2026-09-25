@@ -2,9 +2,11 @@
 
 import { animate, motion, useMotionValue, useMotionValueEvent, useTransform } from "motion/react";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { post, saveInvite, syncEnter, useInvite, type InviteData } from "@/lib/invite";
 import {
   armSealOnFirstTouch,
+  breath,
   buzz,
   crackTick,
   flutter,
@@ -12,6 +14,7 @@ import {
   ripFinish,
   ripTick,
   rustle,
+  scream,
   sealSnap,
   slotClack,
   stamp,
@@ -27,6 +30,14 @@ const COMMIT_AT = SEAL_AT;
 /** the wax starts crazing this far before the tear reaches it */
 const CRAZE_FROM = 0.26;
 const CRACKS = 8;
+
+/**
+ * What was living in the envelope. One is picked per invitation and preloaded while the envelope
+ * arrives, so it is decoded and ready the instant it is needed.
+ */
+const SCARES = ["/media/scare/banshee.webp", "/media/scare/ghoul.webp"];
+/** how long the thing stays in your face, in ms; matches the .scare animations in invite.css */
+const SCARE_MS = 1020;
 
 const pad2 = (n: number) => String(n).padStart(2, "0");
 const reduced = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -203,6 +214,10 @@ function usePostbox(deliver: boolean) {
  * flies off, the letter with the room slides out, and something that was
  * living in there leaves in a hurry. Let go before the wax and the paper
  * springs back whole.
+ *
+ * Then, while the guest is reading their room, the rest of what was living in
+ * there comes out, straight at them. Only on a fresh tear: a reloaded, already
+ * opened invitation never does it again.
  */
 function Invitation({ invite, fresh }: { invite: InviteData; fresh: boolean }) {
   const torn = invite.enteredAt != null;
@@ -218,6 +233,25 @@ function Invitation({ invite, fresh }: { invite: InviteData; fresh: boolean }) {
   const [hint, setHint] = useState(true);
   const [cracks, setCracks] = useState(torn ? CRACKS : 0);
   const [open, setOpen] = useState(torn);
+  // "lurking" until the tear, "out" for the second it is in your face, "gone" after (or if it already happened)
+  const [scare, setScare] = useState<"lurking" | "out" | "gone">(torn ? "gone" : "lurking");
+  const [scared, setScared] = useState(false);
+  const [scareArt, setScareArt] = useState<string | null>(null);
+  const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const after = (ms: number, fn: () => void) => timers.current.push(setTimeout(fn, ms));
+  useEffect(() => () => timers.current.forEach(clearTimeout), []);
+
+  useEffect(() => {
+    if (torn) return;
+    const src = SCARES[Math.floor(Math.random() * SCARES.length)];
+    const img = new Image();
+    img.src = src;
+    // only counted as ready once decoded: a half-loaded jump scare is a grey box
+    img.decode().then(
+      () => setScareArt(src),
+      () => {},
+    );
+  }, [torn]);
 
   // Paper stays joined ahead of the tear, so the strip hinges AT the tear point: everything already
   // torn lifts to the left of it, everything still attached stays stuck down to the right.
@@ -260,11 +294,24 @@ function Invitation({ invite, fresh }: { invite: InviteData; fresh: boolean }) {
     animate(flyRotate, -28, { duration: 0.9, ease: "easeIn" });
     animate(flyOpacity, 0, { duration: 0.35, delay: 0.55 });
     setOpen(true);
-    setTimeout(rustle, 300);
-    setTimeout(flutter, 700);
+    after(300, rustle);
+    after(700, flutter);
     saveInvite({ ...invite, enteredAt: Date.now() });
     void syncEnter();
-    if (!reduced()) {
+    // a breath behind you, a moment to read the room number, and then it comes out. The moment
+    // wanders by most of a second, so the queue watching the last guest can't count it in.
+    after(550, breath);
+    const at = 1500 + Math.random() * 900;
+    after(at, () => {
+      setScare("out");
+      setScared(true);
+      scream();
+      buzz([320, 60, 480]);
+    });
+    after(at + SCARE_MS, () => {
+      setScare("gone");
+      if (reduced()) return;
+      // and the relief: the stamp comes down and the paper goes up
       import("canvas-confetti").then(({ default: confetti }) =>
         confetti({
           particleCount: 110,
@@ -274,7 +321,7 @@ function Invitation({ invite, fresh }: { invite: InviteData; fresh: boolean }) {
           colors: ["#ff7a1a", "#f5c76a", "#8a5cd6", "#8dff6a", "#efe6d0"],
         }),
       );
-    }
+    });
   };
 
   const finishTear = () => animate(progress, 1, { duration: 0.22, ease: "easeOut" }).then(complete);
@@ -331,8 +378,9 @@ function Invitation({ invite, fresh }: { invite: InviteData; fresh: boolean }) {
 
   return (
     <div
-      className={`inv${invite.cast ? " cast" : ""}${open ? " open" : ""}${!ready ? " arriving" : ""} pb-${postbox.stage}`}
+      className={`inv${invite.cast ? " cast" : ""}${open ? " open" : ""}${scare === "gone" ? " settled" : ""}${!ready ? " arriving" : ""} pb-${postbox.stage}`}
     >
+      {scare === "out" && createPortal(<JumpScare art={scareArt} />, document.body)}
       {/* the clip lives on this static wrapper: put on the moving paper it would travel with it */}
       <div className="env-feed">
         {postbox.stage !== "done" && (
@@ -438,6 +486,7 @@ function Invitation({ invite, fresh }: { invite: InviteData; fresh: boolean }) {
               ? "Your portrait hangs in the gallery. Look up — your window just lit in the manor."
               : `Find ${roomLabel(invite.room)} in the ${wingOf(invite.room)}. Look up — your window just lit in the manor.`}
           </span>
+          {scared && scare === "gone" && <em className="inv-sorry">Sorry about that. It gets everyone.</em>}
           <a className="inv-alt" href="/join">
             Enter the parlour →
           </a>
@@ -491,6 +540,27 @@ function SealArt({ cracks }: { cracks: number }) {
         ))}
       </g>
     </svg>
+  );
+}
+
+/* ------------------------------------------------------------ jump scare */
+
+/**
+ * A second in its face: it lunges out of the dark, the picture tears into red and cyan and shakes,
+ * then it is yanked back into the envelope. Split into a red copy and a cyan copy, screened back
+ * together over black, so the two can be pulled apart for the glitch. If the art hasn't arrived
+ * (dreadful venue Wi-Fi) a face drawn in CSS stands in.
+ */
+function JumpScare({ art }: { art: string | null }) {
+  const style = art ? ({ "--scare": `url(${art})` } as React.CSSProperties) : undefined;
+  return (
+    <div className={`scare${art ? "" : " bare"}`} style={style} aria-hidden="true">
+      <i className="scare-face r" />
+      <i className="scare-face c" />
+      <i className="scare-tear" />
+      <i className="scare-lines" />
+      <i className="scare-flash" />
+    </div>
   );
 }
 

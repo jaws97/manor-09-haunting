@@ -271,7 +271,8 @@
   transform: rotate(-6deg);
   opacity: 0;
 }
-.inv.open .env-stamp { animation: stamp-in 0.45s 1.1s cubic-bezier(0.2, 1.4, 0.4, 1) both; }
+/* the stamp waits until whatever was in the envelope has been and gone */
+.inv.settled .env-stamp { animation: stamp-in 0.45s 0.2s cubic-bezier(0.2, 1.4, 0.4, 1) both; }
 @keyframes stamp-in {
   from { opacity: 0; transform: rotate(-6deg) scale(2.6); }
   to { opacity: 1; }
@@ -456,9 +457,120 @@
 }
 .inv-alt { display: inline-block; text-decoration: none; font-size: 16px; padding: 12px 22px; margin-top: 6px; }
 .inv-alt.quiet { background: transparent; box-shadow: none; color: var(--ink-soft); text-transform: none; letter-spacing: 0; font-family: var(--serif); font-style: italic; font-weight: 400; font-size: 16px; }
+.inv-sorry { font-size: 15px; color: var(--ink-soft); opacity: 0.85; animation: env-appear 0.6s 0.5s ease both; }
+
+/* ---------- the thing in the envelope: one second, full screen ---------- */
+.scare {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  overflow: hidden;
+  pointer-events: none;
+  background: #000;
+  /* the whole picture shudders, then is yanked back into the envelope; SCARE_MS in Invite.tsx is the sum */
+  animation: scare-shake 0.07s steps(1) 12, scare-back 0.16s 0.86s cubic-bezier(0.6, 0, 1, 0.6) forwards;
+}
+@keyframes scare-shake {
+  0% { translate: 0 0; }
+  25% { translate: -14px 9px; }
+  50% { translate: 11px -12px; }
+  75% { translate: -9px -6px; }
+}
+@keyframes scare-back {
+  to { scale: 0.08; opacity: 0; }
+}
+/* a red copy and a cyan copy, screened back into one picture over black, so the glitch can pull them apart */
+.scare-face,
+.scare-tear {
+  position: absolute;
+  inset: -5%;
+  background: var(--scare) 50% 26% / cover no-repeat, #fff;
+}
+.scare-face { background-blend-mode: multiply; mix-blend-mode: screen; }
+.scare-face.r { background-color: #f00; animation: scare-lunge 0.15s cubic-bezier(0.1, 0.8, 0.3, 1.25) both, split-r 0.09s 0.15s steps(1) 8; }
+.scare-face.c { background-color: #0ff; animation: scare-lunge 0.15s cubic-bezier(0.1, 0.8, 0.3, 1.25) both, split-c 0.09s 0.15s steps(1) 8; }
+/* out of the dark and past you: the curve overshoots, so it comes too close before it settles */
+@keyframes scare-lunge {
+  from { scale: 0.3; filter: blur(6px) brightness(3); opacity: 0.2; }
+  60% { opacity: 1; }
+  to { scale: 1; filter: none; opacity: 1; }
+}
+@keyframes split-r {
+  0% { translate: -10px 0; }
+  20% { translate: 6px 3px; }
+  40% { translate: -4px -2px; }
+  60% { translate: 14px 0; }
+  80% { translate: -2px 4px; }
+}
+@keyframes split-c {
+  0% { translate: 10px 0; }
+  20% { translate: -6px -3px; }
+  40% { translate: 4px 2px; }
+  60% { translate: -14px 0; }
+  80% { translate: 2px -4px; }
+}
+/* a band of the picture torn sideways, twice */
+.scare-tear { opacity: 0; animation: scare-tear 0.72s 0.14s steps(1) both; }
+@keyframes scare-tear {
+  0% { opacity: 1; clip-path: inset(38% 0 52% 0); translate: 34px 0; }
+  12% { clip-path: inset(62% 0 30% 0); translate: -26px 0; }
+  24% { opacity: 0; }
+  46% { opacity: 1; clip-path: inset(18% 0 74% 0); translate: 42px 0; }
+  58% { clip-path: inset(48% 0 44% 0); translate: -38px 0; }
+  70%, 100% { opacity: 0; }
+}
+.scare-lines {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.42) 0 2px, transparent 2px 5px);
+  mix-blend-mode: multiply;
+  animation: scare-roll 0.12s linear infinite;
+}
+@keyframes scare-roll {
+  to { background-position: 0 5px; }
+}
+.scare::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 38%, transparent 40%, rgba(110, 0, 0, 0.75) 100%);
+  animation: scare-pulse 0.16s steps(1) infinite;
+}
+@keyframes scare-pulse {
+  50% { opacity: 0.4; }
+}
+/* one flash as it arrives: white, then blood */
+.scare-flash { position: absolute; inset: 0; background: #fff; opacity: 0; animation: scare-flash 0.24s ease-out; }
+@keyframes scare-flash {
+  0% { opacity: 0.95; }
+  35% { opacity: 0.45; background: #ff3030; }
+  100% { opacity: 0; background: #ff3030; }
+}
+/* no art yet (dreadful Wi-Fi): a face out of gradients, pale with black holes for eyes and mouth */
+.scare.bare {
+  --scare:
+    radial-gradient(circle at 39% 40%, #fff 0 0.7vmin, transparent 1vmin),
+    radial-gradient(circle at 61% 40%, #fff 0 0.7vmin, transparent 1vmin),
+    radial-gradient(ellipse 10vmin 7vmin at 39% 40%, #000 60%, transparent 70%),
+    radial-gradient(ellipse 10vmin 7vmin at 61% 40%, #000 60%, transparent 70%),
+    radial-gradient(ellipse 13vmin 20vmin at 50% 62%, #000 55%, #2a0000 62%, transparent 70%),
+    radial-gradient(ellipse 36vmin 50vmin at 50% 48%, #c9cfc2 0 50%, #5d645a 78%, transparent 82%);
+}
+/* gradients have gaps the colour split would fill with white: one plain copy on black instead */
+.scare.bare .scare-face.r { background-color: #000; background-blend-mode: normal; mix-blend-mode: normal; }
+.scare.bare .scare-face.c { display: none; }
+.scare.bare .scare-tear { background-color: #000; }
 
 @media (prefers-reduced-motion: reduce) {
   .env-paper, .env-stamp, .pulse-hint, .env-handle.nudge, .letterbox, .lb-flap, .bat-out, .inv.open .inv-after, .inv.pb-wax .seal-half { animation: none; opacity: 1; }
   .inv.open .env-stamp { opacity: 1; }
   .env-letter { transition: none; }
+  /* still there, still loud, but it doesn't lunge, shake or flash */
+  .scare { animation: scare-calm 1.02s steps(1) both; }
+  .scare-face.r, .scare-face.c, .scare-lines { animation: none; }
+  .scare-tear, .scare-flash, .scare::after { display: none; }
+}
+@keyframes scare-calm {
+  90% { opacity: 1; }
+  100% { opacity: 0; }
 }
