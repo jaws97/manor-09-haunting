@@ -35,8 +35,8 @@ const CRACKS = 8;
 const SCARES = [
   "/media/scare/banshee.webp",
   "/media/scare/ghoul.webp",
-  "/media/scare/hag.webp",
-  "/media/scare/werewolf.webp",
+  "/media/scare/sari.webp",
+  "/media/scare/bride.webp",
   "/media/scare/doll.webp",
 ];
 /** how long the thing stays in your face, in ms; matches the .scare animations in invite.css */
