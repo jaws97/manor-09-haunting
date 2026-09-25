@@ -10,7 +10,7 @@ import { Candy } from "./Candy";
 import { Gates } from "./Gates";
 import { GuestBook } from "./GuestBook";
 import { STAGE_W, STAGE_H, useStageScale } from "./hooks";
-import { Ident, Midnight, Storm, TitleCard } from "./Opening";
+import { Ident, Storm, TitleCard } from "./Opening";
 import { Portrait } from "./Portrait";
 import { Reactions } from "./Reactions";
 import { Scream } from "./Scream";
@@ -98,9 +98,6 @@ export function Screen() {
               <Gates arrived={state.arrived} photos={state.photos} armed={armed} open={state.gatesOpen} />
             )}
             {state.phase === "storm" && <Storm onDone={() => void dispatch({ type: "next", ifPhase: "storm" })} />}
-            {state.phase === "midnight" && (
-              <Midnight onDone={() => void dispatch({ type: "next", ifPhase: "midnight" })} />
-            )}
             {state.phase === "ident" && (
               <Ident muted={state.muted} onDone={() => void dispatch({ type: "next", ifPhase: "ident" })} />
             )}

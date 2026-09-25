@@ -679,50 +679,6 @@
   to { opacity: 1; }
 }
 
-/* ------------------------------------------------------------- midnight */
-.midnight {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  background: radial-gradient(ellipse at 50% 40%, #1d1630, var(--night) 70%);
-  overflow: hidden;
-}
-.clock { width: 520px; height: 520px; filter: drop-shadow(0 30px 60px rgba(0, 0, 0, 0.8)); z-index: 5; }
-.clock svg { width: 100%; height: 100%; overflow: visible; }
-.clock .face { fill: #efe6d0; }
-.clock .rim { fill: none; stroke: var(--gilt); stroke-width: 6; }
-.clock .hour { stroke: #1a1226; stroke-width: 3; }
-.clock .min { stroke: #1a1226; stroke-width: 1.2; }
-.clock .numeral { font-family: var(--display); font-size: 22px; font-weight: 700; fill: #1a1226; }
-.clock .hand { stroke: #1a1226; stroke-linecap: round; }
-.clock .hour-hand { stroke-width: 7; }
-.clock .min-hand { stroke-width: 5; }
-.clock .sec-hand { stroke: var(--wax-2); stroke-width: 2; transform-origin: 100px 100px; animation: sec 60s steps(60) infinite; }
-@keyframes sec {
-  to { transform: rotate(360deg); }
-}
-.clock .pin { fill: var(--gilt); }
-.midnight-num {
-  z-index: 5;
-  margin-top: -30px;
-  font-family: var(--display);
-  font-weight: 800;
-  font-size: 200px;
-  line-height: 1;
-  color: var(--ink);
-  text-transform: uppercase;
-  text-shadow: 0 0 60px rgba(255, 122, 26, 0.4);
-  animation: toll-in 0.9s cubic-bezier(0.2, 1.4, 0.4, 1) both;
-}
-@keyframes toll-in {
-  from { opacity: 0; transform: scale(1.8); filter: blur(10px); }
-}
-.midnight-sub { z-index: 5; margin: 0; font-style: italic; font-size: 40px; color: var(--ink-soft); }
-
 /* ---------------------------------------------------------------- ident */
 .ident { position: absolute; inset: 0; background: #000; display: grid; place-items: center; overflow: hidden; }
 /* A film ident on a 16:9 screen: the clip is shot at 21:9 and sits in its own band, black above and below. */
@@ -1584,7 +1540,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .grain, .tv-static, .moon .cloud, .candle .flame, .candle .glow, .gates-stroll, .walker, .walker-svg, .walker .leg, .cat .tail, .cat .head, .cat .eyes ellipse, .ghost .arm, .ghost .face ellipse, .pumpkin .stem, .pumpkin .face, .candies i, .candy-sub, .bat, .bat .wing, .sec-hand, .manor-lamp, .manor-door .fanlight, .manor-door .leaf, .manor-door .hall { animation: none; }
+  .grain, .tv-static, .moon .cloud, .candle .flame, .candle .glow, .gates-stroll, .walker, .walker-svg, .walker .leg, .cat .tail, .cat .head, .cat .eyes ellipse, .ghost .arm, .ghost .face ellipse, .pumpkin .stem, .pumpkin .face, .candies i, .candy-sub, .bat, .bat .wing, .manor-lamp, .manor-door .fanlight, .manor-door .leaf, .manor-door .hall { animation: none; }
   .mw.flicker, .mw.fresh, .manor-lights.wave .mw::before, .stars, .sky-cloud, .smoke i, .eyes, .crow .head, .crow .beak-low, .jol::before, .clock-halo { animation: none; }
   .smoke, .eyes, .clock-halo { display: none; }
   .huluween b.on, .titlecard.lit .huluween, .titlecard.lit .huluween i, .titlecard.lit .huluween b.drip::after { animation: none; opacity: 1; }

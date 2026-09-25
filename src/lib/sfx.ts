@@ -164,12 +164,6 @@ export function noise(filter: BiquadFilterType, freq: number, q: number, env: En
 
 /* ------------------------------------------------------------------ cues */
 
-/** the clock's escapement */
-export function tick() {
-  noise("bandpass", 2600, 3, { a: 0.002, d: 0.03, peak: 0.28 });
-  tone(1500, "square", { a: 0.001, d: 0.015, peak: 0.04 });
-}
-
 /**
  * A window lights on the gates screen: music-box notes, more of them for a resident. Written in D minor,
  * the key the gates soundscape plays in, so an arrival lands inside the tune rather than across it.
