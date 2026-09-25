@@ -4,7 +4,9 @@
  * Run of show. Once the host leaves the gates the opening plays as one piece,
  * cinema-style: the team ident first, like a production company card, then the
  * storm breaks over the manor and the title card waits for the host. From there
- * Next goes straight to the séance.
+ * Next goes straight to the séance. After the credits, the cake: its candles
+ * light themselves for the room to sing to, and once the knife goes in the
+ * cut cake, with the manor's cat in the frosting, loops for the rest of the night.
  */
 export const PHASES = [
   "gates",
@@ -15,6 +17,8 @@ export const PHASES = [
   "gallery",
   "scream",
   "guestbook",
+  "cake",
+  "cut",
 ] as const;
 export type Phase = (typeof PHASES)[number];
 
@@ -27,6 +31,8 @@ export const PHASE_LABEL: Record<Phase, string> = {
   gallery: "The portrait gallery",
   scream: "The scream",
   guestbook: "The guest book",
+  cake: "The cake",
+  cut: "After the cut",
 };
 
 /** Where the show is, in words: at the gates, whether they are locked. */
@@ -38,6 +44,8 @@ export const PHASE_NOTE: Partial<Record<Phase, string>> = {
   gates: "Locked while the house fills: no QR, and the invitation page turns people away. Next opens them; Next again starts the show",
   ident: "Opens the show, then runs on by itself: the storm, then the title card",
   title: "About 12s of organ while the title carves itself in, then the keeper reads it. Next after that",
+  cake: "The candles light themselves, then the music box plays Happy Birthday for the room to sing to. Next when the knife goes in",
+  cut: "The cut cake, and the manor's cat in the frosting, on a loop for the rest of the night. Mute from here if the venue plays its own music",
 };
 
 /** Rooms in the manor: 8 floors of 15 windows. The residents keep rooms 1..27, the top floors. */

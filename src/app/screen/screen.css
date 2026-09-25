@@ -1332,6 +1332,33 @@
 .roll .returns small { display: block; margin-top: 14px; font-family: var(--serif); font-weight: 400; text-transform: none; letter-spacing: 0; font-style: italic; font-size: 40px; color: var(--ink-soft); }
 .roll .cake { margin: 500px 0 0; font-family: var(--display); font-weight: 800; text-transform: uppercase; font-size: 190px; line-height: 1; color: var(--pumpkin); text-shadow: 0 0 80px rgba(255, 122, 26, 0.4); }
 
+/* ----------------------------------------------------------------- cake */
+.cake-scene { position: absolute; inset: 0; overflow: hidden; background: #000; }
+/* the burning loop waits under the lighting film, on the frame the film ends on */
+.cake-scene .cake-film { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+/* once the candles are lit, the words, over the moonlit window and on the tablecloth */
+.cake-scene .cake-title,
+.cake-scene .cake-sub { position: absolute; left: 0; right: 0; margin: 0; text-align: center; pointer-events: none; animation: cake-words 1.4s cubic-bezier(0.2, 0.8, 0.3, 1) both; }
+.cake-scene .cake-title {
+  top: 40px;
+  font-family: var(--display);
+  font-weight: 800;
+  text-transform: uppercase;
+  font-size: 104px;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  color: var(--candle-2);
+  text-shadow: 0 0 40px rgba(255, 170, 60, 0.55), 0 6px 0 rgba(0, 0, 0, 0.55), 0 0 60px rgba(0, 0, 0, 0.9), 0 14px 30px rgba(0, 0, 0, 0.8);
+}
+.cake-scene .cake-sub { bottom: 50px; font-style: italic; font-size: 44px; color: var(--ink); text-shadow: 0 2px 14px rgba(0, 0, 0, 0.95), 0 0 30px rgba(0, 0, 0, 0.8); animation-delay: 0.5s; }
+@keyframes cake-words {
+  from { opacity: 0; transform: translateY(18px); filter: blur(8px); }
+}
+
+/* ------------------------------------------------------------ after the cut */
+.after-cut { position: absolute; inset: 0; background: #000; }
+.after-cut .cut-film { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+
 /* ---------- live reactions: guest whispers over whatever is playing ---------- */
 .live { position: absolute; inset: 0; pointer-events: none; z-index: 5; overflow: hidden; }
 .live-toasts { position: absolute; left: 48px; bottom: 72px; display: grid; gap: 14px; width: 760px; }
@@ -1556,4 +1583,5 @@
   .ambient { opacity: 1; }
   .scream.tremble { animation: none; }
   .storm-scene { animation: none; }
+  .cake-scene .cake-title, .cake-scene .cake-sub { animation: none; }
 }

@@ -6,6 +6,7 @@ import { showCues } from "@/data/vo";
 import * as sfx from "@/lib/sfx";
 import { say, setVoMuted, stopVo } from "@/lib/vo";
 import { phaseLabel, useShow } from "@/lib/show";
+import { AfterCut, Cake } from "./Cake";
 import { Candy } from "./Candy";
 import { Gates } from "./Gates";
 import { GuestBook } from "./GuestBook";
@@ -106,6 +107,8 @@ export function Screen() {
             {state.phase === "gallery" && <Portrait key={state.portrait} r={residents[state.portrait]} />}
             {state.phase === "scream" && <Scream state={state} />}
             {state.phase === "guestbook" && <GuestBook whispers={state.whispers} />}
+            {state.phase === "cake" && <Cake muted={state.muted} />}
+            {state.phase === "cut" && <AfterCut />}
           </div>
         )}
         {ready && opened && titleLeaving > 0 && (

@@ -775,6 +775,108 @@ export function gatesAmbience(): Loop {
   };
 }
 
+/**
+ * Happy Birthday (the tune is public domain) on the music box, for the room to sing to once the
+ * cake's candles have caught. In F, the relative major of the manor's D minor, with the box an
+ * octave above where a room of people sings it; slow enough to sing along to, and the spring runs
+ * down a little over the last line, the way a room slows into the last note. The first two notes
+ * are the pickup; the keeper's hold on the name is written in.
+ */
+const BIRTHDAY: [note: string, beats: number][] = [
+  ["C5", 0.75], ["C5", 0.25],
+  ["D5", 1], ["C5", 1], ["F5", 1],
+  ["E5", 2], ["C5", 0.75], ["C5", 0.25],
+  ["D5", 1], ["C5", 1], ["G5", 1],
+  ["F5", 2], ["C5", 0.75], ["C5", 0.25],
+  ["C6", 1], ["A5", 1], ["F5", 1],
+  ["E5", 1], ["D5", 1.6], ["Bb5", 0.75], ["Bb5", 0.25],
+  ["A5", 1], ["F5", 1], ["G5", 1],
+  ["F5", 3],
+];
+/** [beat the chord comes in on, bass, the voices in the walls] */
+const BIRTHDAY_HARMONY: [at: number, bass: string, chord: string[]][] = [
+  [1, "F3", ["F3", "A3", "C4"]],
+  [4, "C3", ["E3", "G3", "Bb3"]],
+  [7, "C3", ["E3", "G3", "Bb3"]],
+  [10, "F3", ["F3", "A3", "C4"]],
+  [13, "F3", ["F3", "A3", "C4"]],
+  [16, "Bb2", ["D3", "F3", "Bb3"]],
+  [19.6, "F3", ["F3", "A3", "C4"]],
+  [21.6, "C3", ["E3", "G3", "Bb3"]],
+  [22.6, "F3", ["F3", "A3", "C4"]],
+];
+
+export function happyBirthday(): Loop {
+  const e = engine();
+  if (!e) return noop;
+  const s = scene(e, 1.5);
+  const beat = 0.62;
+  // the last line drags as the spring runs down: beats past this one stretch, a little more each
+  const dragFrom = 19.6;
+  const time = (b: number) => (b <= dragFrom ? b : dragFrom + (b - dragFrom) * (1 + (b - dragFrom) * 0.035)) * beat;
+  const evs: Ev[] = [];
+  // the box being wound: a few clicks of the ratchet before the first note
+  for (let i = 0; i < 5; i++)
+    evs.push({ at: i * 0.11, play: (tt) => noise("bandpass", 3200, 4, { at: tt - e.ctx.currentTime, a: 0.001, d: 0.02, peak: 0.12, out: s.bus }) });
+  const start = 1;
+  let b = 0;
+  for (const [n, beats] of BIRTHDAY) {
+    const f = hz(n);
+    evs.push({ at: start + time(b) + rand(-0.008, 0.012), play: (tt) => box(e, s.bus, f, tt, 1.25) });
+    b += beats;
+  }
+  for (let i = 0; i < BIRTHDAY_HARMONY.length; i++) {
+    const [at, bass, chord] = BIRTHDAY_HARMONY[i];
+    const until = i + 1 < BIRTHDAY_HARMONY.length ? BIRTHDAY_HARMONY[i + 1][0] : b + 2;
+    const freqs = chord.map(hz);
+    evs.push({ at: start + time(at), play: (tt) => box(e, s.bus, hz(bass), tt, 0.85) });
+    evs.push({ at: start + time(at), play: (tt) => choir(e, s.bus, freqs, tt, time(until) - time(at), 0.045) });
+  }
+  const cancel = sequence(e, evs, e.ctx.currentTime + 0.1);
+  return {
+    stop() {
+      cancel();
+      s.set(0, 0.5);
+      s.close(4000);
+    },
+  };
+}
+
+/** After the cake is cut, while the room eats it: the crooked waltz and the manor's other tunes, back to back. */
+const PARTY: Programme[] = [
+  (e, bus) => waltz(e, bus, 0.42),
+  (e, bus) => lullaby(e, bus, { beat: 0.6, up: 2, vel: 0.8 }),
+  (e, bus) => waltz(e, bus, 0.4),
+  (e, bus) => ghostSong(e, bus),
+];
+
+export function partyMusic(): Loop {
+  const e = engine();
+  if (!e) return noop;
+  const s = scene(e, 1, 2);
+  let dead = false;
+  let cancel: (() => void) | null = null;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let n = 0;
+  const next = () => {
+    if (dead) return;
+    const piece = PARTY[n % PARTY.length](e, s.bus, n);
+    n++;
+    cancel = sequence(e, piece.evs, e.ctx.currentTime + 0.2);
+    timer = setTimeout(next, (piece.length + rand(2, 4)) * 1000);
+  };
+  next();
+  return {
+    stop() {
+      dead = true;
+      clearTimeout(timer);
+      cancel?.();
+      s.set(0, 0.6);
+      s.close(4000);
+    },
+  };
+}
+
 /** Under the guest book: the residents' lullaby twice, the second time higher and running down at the end. */
 export function closingLullaby(): Loop {
   const e = engine();
