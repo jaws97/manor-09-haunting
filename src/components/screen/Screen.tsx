@@ -40,6 +40,24 @@ export function Screen() {
   // a phase change cuts the keeper off; the new phase brings its own line
   useEffect(() => stopVo, [state.phase, state.portrait]);
 
+  // Leaving the title card, its letters rise off it like spirits while the next phase comes up
+  // underneath: a silent copy of the finished card stays on top for its exit.
+  const [titleLeaving, setTitleLeaving] = useState(0);
+  const lastPhase = useRef(state.phase);
+  // not for the jump back to the gates when the page opens on a title card a rehearsal left behind
+  const live = useRef(false);
+  useEffect(() => {
+    live.current = opened;
+  }, [opened]);
+  useEffect(() => {
+    const from = lastPhase.current;
+    lastPhase.current = state.phase;
+    if (!live.current || from !== "title" || state.phase === "title") return;
+    setTitleLeaving((n) => n + 1);
+    const t = setTimeout(() => setTitleLeaving(0), 1400);
+    return () => clearTimeout(t);
+  }, [state.phase]);
+
   // announcer lines the host fires by hand
   const cueN = state.cue?.n ?? 0;
   const heard = useRef<number | null>(null);
@@ -76,7 +94,7 @@ export function Screen() {
       >
         {ready && opened && (
           <div className="phase" key={state.phase}>
-            {state.phase === "gates" && <Gates arrived={state.arrived} photos={state.photos} />}
+            {state.phase === "gates" && <Gates arrived={state.arrived} photos={state.photos} armed={armed} />}
             {state.phase === "storm" && <Storm onDone={() => void dispatch({ type: "next", ifPhase: "storm" })} />}
             {state.phase === "midnight" && (
               <Midnight onDone={() => void dispatch({ type: "next", ifPhase: "midnight" })} />
@@ -89,6 +107,11 @@ export function Screen() {
             {state.phase === "gallery" && <Portrait key={state.portrait} r={residents[state.portrait]} />}
             {state.phase === "scream" && <Scream state={state} />}
             {state.phase === "guestbook" && <GuestBook whispers={state.whispers} />}
+          </div>
+        )}
+        {ready && opened && titleLeaving > 0 && (
+          <div className="phase leaving" key={`leaving-${titleLeaving}`} aria-hidden="true">
+            <TitleCard leaving />
           </div>
         )}
         {ready && opened && state.candy && <Candy />}

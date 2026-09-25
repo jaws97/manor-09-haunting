@@ -49,10 +49,13 @@ export function Candy() {
   }, []);
   useEffect(() => {
     let loop: ReturnType<typeof sfx.candyBreak> | null = null;
+    // the waltz is in E minor: whatever music was playing underneath steps out rather than clash with it
+    sfx.duck("candy", true);
     const t = setTimeout(() => (loop = sfx.candyBreak()), 250);
     return () => {
       clearTimeout(t);
       loop?.stop();
+      sfx.duck("candy", false);
     };
   }, []);
 

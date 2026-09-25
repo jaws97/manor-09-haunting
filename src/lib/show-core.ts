@@ -34,6 +34,7 @@ export const PHASE_LABEL: Record<Phase, string> = {
 /** What the keeper should know before pressing a phase; shown under it on the remote. */
 export const PHASE_NOTE: Partial<Record<Phase, string>> = {
   ident: "Opens the show, then runs on by itself: the storm, then the title card",
+  title: "About 12s of organ while the title carves itself in, then the keeper reads it. Next after that",
   midnight: "Runs on by itself into the séance",
 };
 

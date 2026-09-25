@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useEffectEvent, useRef, useState } from "react";
-import { ResidentCountInWords } from "@/data/residents";
+import { event } from "@/data/event";
 import { showCues } from "@/data/vo";
+import { TOCCATA, toccata } from "@/lib/music";
 import * as sfx from "@/lib/sfx";
 import { say } from "@/lib/vo";
 import { Bats, Candle, Fog, Lightning, lightning, Moon } from "./atmosphere";
@@ -213,26 +214,97 @@ function IdentCard({ onDone }: { onDone: () => void }) {
 
 /* ------------------------------------------------------------------ title */
 
-export function TitleCard() {
-  useCue(() => sfx.organ(true), 300);
-  useCue(() => say(showCues.title), 1400);
+/**
+ * The title card, played on the opening of Bach's Toccata in D minor. Each letter
+ * of the title arrives on a note: the first half (HULU, in Hulu green) flickers
+ * in out of a green mist on the first two statements, the second (WEEN) rises
+ * out of the flames on the low third one. The pedal comes in, the chord builds,
+ * and on the resolution lightning strikes, a flash runs through the word, the
+ * candles catch and bats pour out. Then the keeper reads it, and it waits for
+ * the host.
+ *
+ * `leaving` is the card's exit: the finished title, silent, its letters rising
+ * off it like spirits while the next phase comes up underneath (see Screen).
+ */
+export function TitleCard({ leaving = false }: { leaving?: boolean }) {
+  const [head, tail] = event.showHalves;
+  const title = [...`${head}${tail}`.toUpperCase()];
+  const [carved, setCarved] = useState(leaving ? title.length : 0);
+  const [lit, setLit] = useState(leaving);
+  const [bats, setBats] = useState(false);
+
+  useEffect(() => {
+    if (leaving) return;
+    let score: ReturnType<typeof toccata> | null = null;
+    const t: ReturnType<typeof setTimeout>[] = [];
+    // a beat of silence after the storm, then the first note; the timer also keeps dev StrictMode's
+    // double mount from playing it twice
+    const downbeat = setTimeout(() => {
+      score = toccata();
+      // however long the title is, its letters share out the eight notes the Toccata gives them
+      const hits = TOCCATA.letters;
+      title.forEach((_, i) => {
+        const at = hits[Math.round((i * (hits.length - 1)) / Math.max(1, title.length - 1))];
+        t.push(setTimeout(() => setCarved((n) => Math.max(n, i + 1)), at + 60));
+      });
+      t.push(
+        setTimeout(() => {
+          setLit(true);
+          setBats(true);
+          lightning.strike(true);
+        }, TOCCATA.chord + 60),
+      );
+      t.push(setTimeout(() => setBats(false), TOCCATA.chord + 3200));
+      t.push(setTimeout(() => say(showCues.title), TOCCATA.chord + 1900));
+    }, 900);
+    return () => {
+      clearTimeout(downbeat);
+      t.forEach(clearTimeout);
+      score?.stop();
+    };
+    // the title is fixed for the night
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
-    <div className="titlecard">
-      <Moon x={72} y={6} size={260} />
-      <Fog />
-      <Bats every={12} />
-      <Lightning every={14} />
-      <div className="title-candles l">
-        <Candle h={150} />
-      </div>
-      <div className="title-candles r">
-        <Candle h={150} />
+    <div className={`titlecard${lit ? " lit" : ""}`}>
+      <div className="title-sky">
+        <Moon x={72} y={6} size={260} />
+        <Fog />
+        {!leaving && <Bats every={12} />}
+        {bats && <Bats every={1} max={7} />}
+        {/* no stray thunder over the organ: the sky only starts up once the chord has landed */}
+        {!leaving && <Lightning every={lit ? 14 : 0} />}
+        <div className="title-candles l">
+          <Candle h={150} lit={lit} />
+        </div>
+        <div className="title-candles r">
+          <Candle h={150} lit={lit} />
+        </div>
       </div>
       <div className="season-card">
-        <span>A Manor 09 production</span>
-        <b>The Haunting</b>
-        <em>{ResidentCountInWords} residents. Not one of them at rest.</em>
+        <span>{event.presents}</span>
+        <h1 className="huluween" aria-label={event.show}>
+          {title.map((ch, i) => (
+            // the letter arrives and hovers; the glyph inside it glows, flickers, ripples and drips
+            <b
+              key={i}
+              className={`${i < head.length ? "hulu" : "ween"}${i < carved ? " on" : ""}${i % 3 === 1 ? " drip" : ""}`}
+              style={{ "--i": i, "--n": title.length } as React.CSSProperties}
+              aria-hidden="true"
+            >
+              <i>{ch}</i>
+            </b>
+          ))}
+        </h1>
+        <em>{event.titleLine}</em>
       </div>
+      {lit && !leaving && (
+        <>
+          <i className="title-shock hulu" aria-hidden="true" />
+          <i className="title-shock ween" aria-hidden="true" />
+        </>
+      )}
     </div>
   );
 }

@@ -1,7 +1,9 @@
 "use client";
 
+import { useEffect } from "react";
 import { residents } from "@/data/residents";
 import { showCues } from "@/data/vo";
+import { closingLullaby } from "@/lib/music";
 import { say } from "@/lib/vo";
 import type { Whisper } from "@/lib/show";
 import { Bats, Candle, Fog } from "./atmosphere";
@@ -17,6 +19,15 @@ const MAKERS: { name: string; line: string }[] = [
 
 export function GuestBook({ whispers }: { whispers: Whisper[] }) {
   useCue(() => say(showCues.guestbook), 1500);
+  // the residents' lullaby under the roll; the timer keeps dev StrictMode's double mount from playing it twice
+  useEffect(() => {
+    let music: ReturnType<typeof closingLullaby> | null = null;
+    const t = setTimeout(() => (music = closingLullaby()), 300);
+    return () => {
+      clearTimeout(t);
+      music?.stop();
+    };
+  }, []);
   return (
     <div className="guestbook">
       <Fog density={0.7} />

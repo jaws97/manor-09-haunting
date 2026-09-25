@@ -19,6 +19,8 @@
   --spirit: #1ce783;
   --spirit-2: #b9ffdd;
   --spirit-deep: #0b6b3c;
+  /* the same green, by its proper name: the first half of the title card is lit in it */
+  --hulu: #1ce783;
   --gilt: #d4a640;
   --gilt-2: #f1d383;
   --gilt-shadow: #7a5a14;
@@ -28,6 +30,7 @@
   --violet: #5a2d9a;
   --violet-2: #8a5cd6;
   --display: var(--font-display), "Cinzel Decorative", Georgia, "Times New Roman", serif;
+  --title: var(--font-title), "Cinzel Decorative", Georgia, "Times New Roman", serif;
   --serif: var(--font-serif), "IM Fell English", Georgia, "Times New Roman", serif;
   --script: var(--font-script), "Pinyon Script", "Brush Script MT", cursive;
 }
@@ -233,6 +236,8 @@ button {
   transition: opacity 0.6s ease;
 }
 .candle.lit .flame { opacity: 1; }
+/* the flicker animates opacity too, so an unlit candle has to stop flickering or its flame never goes out */
+.candle:not(.lit) .flame { animation: none; }
 .candle .glow {
   position: absolute;
   left: 50%;

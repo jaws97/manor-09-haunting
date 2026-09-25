@@ -80,7 +80,8 @@ export function Lightning({ every = 0 }: { every?: number }) {
       const schedule = () => {
         timer = setTimeout(
           () => {
-            on(Math.random() < 0.25);
+            // through the broadcast, so anything else on stage (a bolt in the sky) sees it too
+            lightning.strike(Math.random() < 0.25);
             schedule();
           },
           (every * 0.6 + Math.random() * every * 0.8) * 1000,
@@ -95,6 +96,65 @@ export function Lightning({ every = 0 }: { every?: number }) {
   }, [every]);
   if (!flash) return null;
   return <div key={flash} className={`flash${near ? " near" : ""}`} aria-hidden="true" />;
+}
+
+/** a jagged channel from the top of the sky down, with two forks off it (in a 200×600 box) */
+function boltPath() {
+  const pts: [number, number][] = [[100, 0]];
+  let x = 100;
+  for (let y = 26; y < 600; y += 20 + Math.random() * 26) {
+    x = Math.max(20, Math.min(180, x + (Math.random() - 0.5) * 46));
+    pts.push([x, y]);
+  }
+  let d = "M" + pts.map(([px, py]) => `${px.toFixed(1)} ${py.toFixed(1)}`).join(" L");
+  for (let k = 0; k < 2; k++) {
+    let [fx, fy] = pts[3 + Math.floor(Math.random() * (pts.length - 6))];
+    const dir = Math.random() < 0.5 ? -1 : 1;
+    d += ` M${fx.toFixed(1)} ${fy.toFixed(1)}`;
+    for (let i = 0; i < 5; i++) {
+      fx += dir * (8 + Math.random() * 16);
+      fy += 16 + Math.random() * 20;
+      d += ` L${fx.toFixed(1)} ${fy.toFixed(1)}`;
+    }
+  }
+  return d;
+}
+
+/**
+ * The bolt itself, seen in the sky whenever lightning strikes. Mount it behind whatever should stand
+ * black against it. `left`..`right` is the band of the stage (in %) it may strike in, `depth` how far
+ * down (in %) it reaches.
+ */
+export function Bolts({ left = 0, right = 100, depth = 45 }: { left?: number; right?: number; depth?: number }) {
+  const [bolt, setBolt] = useState<{ k: number; d: string; x: number } | null>(null);
+  useEffect(() => {
+    if (reduced()) return;
+    let k = 0;
+    let clear: ReturnType<typeof setTimeout> | undefined;
+    const on: Listener = () => {
+      setBolt({ k: ++k, d: boltPath(), x: left + Math.random() * (right - left) });
+      clearTimeout(clear);
+      clear = setTimeout(() => setBolt(null), 900);
+    };
+    listeners.add(on);
+    return () => {
+      listeners.delete(on);
+      clearTimeout(clear);
+    };
+  }, [left, right]);
+  if (!bolt) return null;
+  return (
+    <svg
+      key={bolt.k}
+      className="bolt"
+      style={{ left: `${bolt.x}%`, height: `${depth}%` }}
+      viewBox="0 0 200 600"
+      preserveAspectRatio="none"
+      aria-hidden="true"
+    >
+      <path d={bolt.d} />
+    </svg>
+  );
 }
 
 /* ------------------------------------------------------------------- bats */

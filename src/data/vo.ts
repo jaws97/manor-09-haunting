@@ -1,3 +1,4 @@
+import { event } from "./event";
 import { residents, ResidentCountInWords, type Resident } from "./residents";
 
 /**
@@ -19,7 +20,7 @@ export const showCues = {
   },
   title: {
     id: "cue-title",
-    text: `A Manor Oh Nine production... The Haunting. ${ResidentCountInWords} residents. Not one of them at rest.`,
+    text: `A Manor Oh Nine production... ${event.show}. ${ResidentCountInWords} residents. Not one of them at rest.`,
   },
   seance: {
     id: "cue-seance",

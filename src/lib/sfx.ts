@@ -13,6 +13,12 @@ let master: GainNode | null = null;
 let noiseBuf: AudioBuffer | null = null;
 /** a big stone hall, for anything that should ring: bells, organ, knocks */
 let hall: ConvolverNode | null = null;
+/**
+ * The music: the gates soundscape, the title score, the closing lullaby. It has
+ * its own hall, so the whole bed (tails included) can duck under the keeper.
+ */
+let music: GainNode | null = null;
+let musicHall: ConvolverNode | null = null;
 
 export const isArmed = () => !!ctx && ctx.state === "running";
 
@@ -38,6 +44,14 @@ export async function arm() {
       const wet = ctx.createGain();
       wet.gain.value = 0.4;
       hall.connect(wet).connect(master);
+
+      music = ctx.createGain();
+      music.connect(master);
+      musicHall = ctx.createConvolver();
+      musicHall.buffer = ir;
+      const musicWet = ctx.createGain();
+      musicWet.gain.value = 0.45;
+      musicHall.connect(musicWet).connect(music);
     }
     if (ctx.state !== "running") await ctx.resume();
   } catch {}
@@ -46,6 +60,34 @@ export async function arm() {
 
 export function setMuted(muted: boolean) {
   if (ctx && master) master.gain.setTargetAtTime(muted ? 0 : 0.9, ctx.currentTime, 0.05);
+}
+
+/**
+ * Pull the music down while something else has the room: the keeper speaking,
+ * the candy break's own tune. Reasons stack; the quietest one wins.
+ */
+const DUCK = { vo: 0.25, candy: 0 } as const;
+const ducking = new Set<keyof typeof DUCK>();
+export function duck(reason: keyof typeof DUCK, on: boolean) {
+  if (on) ducking.add(reason);
+  else ducking.delete(reason);
+  if (!ctx || !music) return;
+  const to = Math.min(1, ...[...ducking].map((r) => DUCK[r]));
+  music.gain.setTargetAtTime(to, ctx.currentTime, on ? 0.12 : 0.7);
+}
+
+/** Where a voice goes: the dry signal, and (for anything that should ring) the hall that belongs to it. */
+export type Bus = { dry: AudioNode; wet: AudioNode | null };
+
+/** The running graph, for src/lib/music.ts. Null until the operator has woken the manor. */
+export function engine() {
+  if (!ctx || !master || !music || !noiseBuf) return null;
+  return {
+    ctx,
+    noise: noiseBuf,
+    music: { dry: music, wet: musicHall } as Bus,
+    sfx: { dry: master, wet: hall } as Bus,
+  };
 }
 
 /* ------------------------------------------------------------ primitives */
@@ -59,20 +101,32 @@ type Env = {
   lp?: number;
   /** send to the hall */
   ring?: boolean;
+  /** somewhere other than straight to the house speakers (the music bus, a scene's own bus) */
+  out?: Bus;
+  /** -1 (left) .. 1 (right) */
+  pan?: number;
 };
 
-function envGain({ a = 0.01, d, peak, at = 0, ring }: Env) {
+function envGain({ a = 0.01, d, peak, at = 0, ring, out, pan }: Env) {
   const g = ctx!.createGain();
   const t = ctx!.currentTime + at;
   g.gain.setValueAtTime(0.0001, t);
   g.gain.exponentialRampToValueAtTime(peak, t + a);
   g.gain.exponentialRampToValueAtTime(0.0001, t + a + d);
-  g.connect(master!);
-  if (ring && hall) g.connect(hall);
+  let tail: AudioNode = g;
+  if (pan) {
+    const p = ctx!.createStereoPanner();
+    p.pan.value = pan;
+    g.connect(p);
+    tail = p;
+  }
+  const bus = out ?? { dry: master!, wet: hall };
+  tail.connect(bus.dry);
+  if (ring && bus.wet) tail.connect(bus.wet);
   return g;
 }
 
-function tone(freq: number, type: OscillatorType, env: Env, glideTo?: number) {
+export function tone(freq: number, type: OscillatorType, env: Env, glideTo?: number) {
   if (!ctx) return;
   const o = ctx.createOscillator();
   const t = ctx.currentTime + (env.at ?? 0);
@@ -92,7 +146,7 @@ function tone(freq: number, type: OscillatorType, env: Env, glideTo?: number) {
   o.stop(t + (env.a ?? 0.01) + env.d + 0.05);
 }
 
-function noise(filter: BiquadFilterType, freq: number, q: number, env: Env, sweepTo?: number) {
+export function noise(filter: BiquadFilterType, freq: number, q: number, env: Env, sweepTo?: number) {
   if (!ctx || !noiseBuf) return;
   const src = ctx.createBufferSource();
   src.buffer = noiseBuf;
@@ -116,13 +170,26 @@ export function tick() {
   tone(1500, "square", { a: 0.001, d: 0.015, peak: 0.04 });
 }
 
-/** a window lights on the gates screen: a music-box note, one more for a resident */
+/**
+ * A window lights on the gates screen: music-box notes, more of them for a resident. Written in D minor,
+ * the key the gates soundscape plays in, so an arrival lands inside the tune rather than across it.
+ */
 export function chime(cast: boolean) {
-  const notes = cast ? [1046.5, 1568, 2093] : [1046.5, 1318.5];
+  const notes = cast ? [880, 1174.66, 1396.91, 1760] : [880, 1174.66];
   notes.forEach((f, i) => {
     tone(f, "sine", { at: i * 0.11, a: 0.004, d: 1.5, peak: 0.13, ring: true });
-    tone(f * 2.01, "sine", { at: i * 0.11, a: 0.004, d: 0.6, peak: 0.03 });
+    tone(f * 2.756, "sine", { at: i * 0.11, a: 0.003, d: 0.5, peak: 0.025 });
   });
+}
+
+/** a guest's candle leaving the front door and floating up to their window */
+export function wisp(cast: boolean) {
+  const top = cast ? 2400 : 1800;
+  [0, 7, -9].forEach((cents, i) => {
+    const f = 620 * Math.pow(2, cents / 1200);
+    tone(f, "sine", { at: i * 0.03, a: 0.25, d: 0.9, peak: 0.035, ring: true }, top);
+  });
+  noise("bandpass", 900, 1.4, { a: 0.3, d: 0.8, peak: 0.05 }, 5200);
 }
 
 /** thunder: a crack when it is close, then the roll */
@@ -166,8 +233,8 @@ export function knock(n = 3) {
   }
 }
 
-/** the tower bell: inharmonic partials with long decays, into the hall */
-export function toll(deep = true) {
+/** the tower bell: inharmonic partials with long decays, into the hall. `level` < 1 puts it further off. */
+export function toll(deep = true, level = 1) {
   const base = deep ? 130.81 : 261.63;
   const partials: [ratio: number, peak: number, decay: number][] = [
     [1, 0.5, 4.5],
@@ -176,8 +243,8 @@ export function toll(deep = true) {
     [4.07, 0.12, 2.0],
     [5.43, 0.07, 1.4],
   ];
-  partials.forEach(([r, p, d]) => tone(base * r, "sine", { a: 0.004, d, peak: p * 0.5, ring: true }));
-  noise("bandpass", base * 4, 1.5, { a: 0.001, d: 0.08, peak: 0.35 });
+  partials.forEach(([r, p, d]) => tone(base * r, "sine", { a: 0.004, d, peak: p * 0.5 * level, ring: true }));
+  noise("bandpass", base * 4, 1.5, { a: 0.001, d: 0.08, peak: 0.35 * level });
 }
 
 /** a minor chord on the cathedral organ; a sting hits, a swell breathes in */
@@ -266,15 +333,15 @@ export function gutter() {
 
 /* ---------------------------------------------------------------- loops */
 
-type Loop = { stop: () => void; level?: (v: number) => void };
+export type Loop = { stop: () => void; level?: (v: number) => void };
 
 /** wind around the eaves: filtered noise that breathes */
-export function wind(): Loop {
+export function wind({ level = 0.2, out: dest }: { level?: number; out?: AudioNode } = {}): Loop {
   if (!ctx || !noiseBuf || !master) return { stop() {} };
   const out = ctx.createGain();
   out.gain.value = 0;
-  out.gain.setTargetAtTime(0.2, ctx.currentTime, 1.2);
-  out.connect(master);
+  out.gain.setTargetAtTime(level, ctx.currentTime, 1.2);
+  out.connect(dest ?? master);
   const src = ctx.createBufferSource();
   src.buffer = noiseBuf;
   src.loop = true;
@@ -290,7 +357,7 @@ export function wind(): Loop {
   const lfo2 = ctx.createOscillator();
   lfo2.frequency.value = 0.23;
   const depth2 = ctx.createGain();
-  depth2.gain.value = 0.08;
+  depth2.gain.value = level * 0.4;
   lfo2.connect(depth2).connect(out.gain);
   src.connect(f).connect(out);
   src.start();

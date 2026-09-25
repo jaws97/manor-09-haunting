@@ -1,34 +1,37 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
-import * as sfx from "@/lib/sfx";
+import { memo, useEffect, useRef } from "react";
+import { gatesAmbience } from "@/lib/music";
 import { ROOMS, roomLabel, wingOf, type Arrived } from "@/lib/show";
-import { Bats, Cobweb, Fog, Lightning, lightning, Moon } from "./atmosphere";
+import { Bats, Bolts, Cobweb, Fog, Lightning, Moon } from "./atmosphere";
 import { Parade } from "./Candy";
+import { Manor } from "./Manor";
 
 /**
  * The gates: a QR for the invitation, the manor lighting up window by window
- * as seals are broken at the gate, and the latest arrival announced.
+ * as seals are broken at the gate, and the latest arrival announced. It is on
+ * screen for the whole arrival, so it has a soundscape of its own (see
+ * gatesAmbience in lib/music.ts), which starts once the operator wakes the manor.
  */
-export function Gates({ arrived, photos }: { arrived: Arrived[]; photos: string[] }) {
+export function Gates({ arrived, photos, armed }: { arrived: Arrived[]; photos: string[]; armed: boolean }) {
   const latest = arrived[arrived.length - 1];
-  const taken = useMemo(() => new Map(arrived.map((g) => [g.room, g])), [arrived]);
 
-  // a note for each arrival (and a flash of lightning for a resident), but not for whoever was
-  // already in when the screen loaded
-  const seen = useRef<number | null>(null);
   useEffect(() => {
-    if (seen.current !== null && arrived.length > seen.current && latest) {
-      sfx.chime(latest.cast);
-      if (latest.cast) lightning.strike(false);
-    }
-    seen.current = arrived.length;
-  }, [arrived.length, latest]);
+    if (!armed) return;
+    const ambience = gatesAmbience();
+    return () => ambience.stop();
+  }, [armed]);
 
   return (
     <div className="gates">
-      <Moon x={63} y={2} size={190} />
-      <Fog density={1.1} />
+      <Sky />
+      <Moon x={76} y={9} size={230} />
+      <Bolts left={52} right={96} depth={42} />
+      <Grounds />
+      <Manor arrived={arrived} />
+      <div className="gates-fog">
+        <Fog density={1.1} />
+      </div>
       <Bats every={18} />
       <Lightning every={45} />
       <div className="gates-left">
@@ -48,18 +51,7 @@ export function Gates({ arrived, photos }: { arrived: Arrived[]; photos: string[
         </div>
         <SpiritPhotos photos={photos} />
       </div>
-      <div className="gates-right">
-        <div className="house-head">
-          <span>The house</span>
-          <b>
-            {Math.min(arrived.length, ROOMS)}
-            <small>
-              {" "}
-              / {ROOMS} rooms{arrived.length > ROOMS && ` · +${arrived.length - ROOMS} in the crypt`}
-            </small>
-          </b>
-        </div>
-        <Manor taken={taken} latest={latest} />
+      <div className="gates-arrival">
         <div className="just-arrived" key={latest?.room ?? 0}>
           {latest ? (
             <>
@@ -77,6 +69,15 @@ export function Gates({ arrived, photos }: { arrived: Arrived[]; photos: string[
             </>
           )}
         </div>
+        <div className="house-count">
+          <b>
+            {Math.min(arrived.length, ROOMS)}
+            <small> / {ROOMS}</small>
+          </b>
+          <span>
+            rooms taken{arrived.length > ROOMS && ` · +${arrived.length - ROOMS} in the crypt`}
+          </span>
+        </div>
       </div>
       <div className="gates-stroll" aria-hidden="true">
         <Parade />
@@ -85,51 +86,124 @@ export function Gates({ arrived, photos }: { arrived: Arrived[]; photos: string[
   );
 }
 
-/**
- * The manor's façade: 8 floors of 15 windows. Each broken seal lights one;
- * the residents' rooms (the top floors) glow gold.
- */
-export function Manor({ taken, latest }: { taken: Map<number, Arrived>; latest?: Arrived }) {
+/* ------------------------------------------------------------ the scene */
+
+/** mulberry32: a small seeded random, so the stars and the trees grow the same way every time */
+function seeded(seed: number) {
+  return () => {
+    seed = (seed + 0x6d2b79f5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/** a field of stars as one element's box-shadows: cheap to draw, and it never moves */
+function starfield(seed: number, n: number) {
+  const r = seeded(seed);
+  return Array.from({ length: n }, () => {
+    const x = Math.round(r() * 1920);
+    // thinner toward the horizon, where the glow of the grounds washes them out
+    const y = Math.round(Math.pow(r(), 1.7) * 700);
+    const a = (0.35 + r() * 0.65).toFixed(2);
+    return `${x}px ${y}px 0 ${r() < 0.12 ? 1 : 0}px rgba(240, 235, 255, ${a})`;
+  }).join(",");
+}
+const STARS = [starfield(9, 90), starfield(27, 70)];
+
+/** The night over the manor: two fields of stars twinkling out of step, and clouds dragging past. */
+const Sky = memo(function Sky() {
   return (
-    <div className="manor">
-      <svg className="roofline" viewBox="0 0 900 200" preserveAspectRatio="none" aria-hidden="true">
-        {/* west wing, mansard */}
-        <path className="roof" d="M0 200 L0 130 L28 96 L212 96 L240 130 L240 200Z" />
-        {/* east wing */}
-        <path className="roof" d="M660 200 L660 130 L688 96 L872 96 L900 130 L900 200Z" />
-        {/* main house: two gables and the clock tower between them */}
-        <path className="roof" d="M240 200 L240 120 L330 46 L420 120 L420 200Z" />
-        <path className="roof" d="M480 200 L480 120 L570 46 L660 120 L660 200Z" />
-        <path className="roof tower" d="M418 200 L418 70 L450 4 L482 70 L482 200Z" />
-        <rect className="chimney" x="284" y="40" width="14" height="46" />
-        <rect className="chimney" x="606" y="40" width="14" height="46" />
-        <circle className="clockface" cx="450" cy="120" r="20" />
-        <path className="clockhands" d="M450 120 L450 106 M450 120 L459 120" />
-        <path className="weather" d="M450 4 L450 -14 M442 -8 L458 -8" />
-      </svg>
-      <div className="facade">
-        {Array.from({ length: ROOMS }, (_, i) => {
-          const g = taken.get(i + 1);
-          const fresh = g && g === latest;
-          return <i key={i} className={`win${g ? " lit" : ""}${g?.cast ? " cast" : ""}${fresh ? " fresh" : ""}`} />;
-        })}
-      </div>
-      {/* the front door: two plank leaves standing ajar on a hall lit sickly green,
-          something crossing it now and then, a cobwebbed fanlight, iron ring knocker */}
-      <i className="manor-lamp l" />
-      <div className="manor-door">
-        <i className="hall" />
-        <i className="leaf l">
-          <i className="knocker" />
-        </i>
-        <i className="leaf r" />
-        <i className="fanlight" />
-      </div>
-      <i className="manor-lamp r" />
-      <div className="manor-steps" />
+    <div className="sky-night" aria-hidden="true">
+      <i className="stars s1" style={{ boxShadow: STARS[0] }} />
+      <i className="stars s2" style={{ boxShadow: STARS[1] }} />
+      <i className="sky-cloud c1" />
+      <i className="sky-cloud c2" />
+      <i className="sky-cloud c3" />
     </div>
   );
+});
+
+/**
+ * A dead tree as one SVG path: the trunk splits, and splits again, each limb a tapered, slightly
+ * bent quad that forks into two or three thinner ones.
+ */
+function deadTree(seed: number, x: number, y: number, height: number, lean: number) {
+  const r = seeded(seed);
+  const parts: string[] = [];
+  const f = (n: number) => n.toFixed(1);
+  const limb = (x0: number, y0: number, len: number, ang: number, w: number, depth: number) => {
+    const x1 = x0 + Math.cos(ang) * len;
+    const y1 = y0 + Math.sin(ang) * len;
+    const nx = Math.cos(ang + Math.PI / 2);
+    const ny = Math.sin(ang + Math.PI / 2);
+    const bend = (r() - 0.5) * len * 0.35;
+    const mx = (x0 + x1) / 2 + nx * bend;
+    const my = (y0 + y1) / 2 + ny * bend;
+    const w1 = w * 0.64;
+    const wm = (w + w1) / 4;
+    parts.push(
+      `M${f(x0 + (nx * w) / 2)} ${f(y0 + (ny * w) / 2)} Q${f(mx + nx * wm)} ${f(my + ny * wm)} ${f(x1 + (nx * w1) / 2)} ${f(y1 + (ny * w1) / 2)} ` +
+        `L${f(x1 - (nx * w1) / 2)} ${f(y1 - (ny * w1) / 2)} Q${f(mx - nx * wm)} ${f(my - ny * wm)} ${f(x0 - (nx * w) / 2)} ${f(y0 - (ny * w) / 2)}Z`,
+    );
+    if (depth === 0 || w1 < 1.1) return;
+    const kids = depth > 4 ? 2 : r() < 0.45 ? 3 : 2;
+    for (let k = 0; k < kids; k++) {
+      const spread = (k - (kids - 1) / 2) * 0.62 + (r() - 0.5) * 0.7;
+      limb(x1, y1, len * (0.6 + r() * 0.24), ang + spread, w1, depth - 1);
+    }
+  };
+  limb(x, y, height * 0.34, -Math.PI / 2 + lean, height * 0.07, 7);
+  return parts.join("");
 }
+
+function tombstone(x: number, y: number, kind: number, tilt: number) {
+  const shapes = [
+    "M-14 0 V-30 A14 14 0 0 1 14 -30 V0 Z",
+    "M-4 0 V-26 H-15 V-34 H-4 V-46 H4 V-34 H15 V-26 H4 V0 Z",
+    "M-12 0 V-20 L-9 -36 L0 -44 L9 -36 L12 -20 V0 Z",
+    "M-18 0 V-22 Q-18 -30 -10 -30 H10 Q18 -30 18 -22 V0 Z",
+  ];
+  return { d: shapes[kind % shapes.length], transform: `translate(${x} ${y}) rotate(${tilt})` };
+}
+
+// one behind the west tower, leaning toward the house and clear of the QR's caption; one off the east edge
+const TREES = [deadTree(3, 1035, 960, 400, 0.1), deadTree(11, 1905, 960, 560, 0.2)];
+const STONES = [
+  tombstone(930, 1004, 0, -6),
+  tombstone(986, 1012, 1, 4),
+  tombstone(1042, 1006, 3, -3),
+  tombstone(1800, 1000, 2, 5),
+  tombstone(1858, 1010, 0, -8),
+];
+
+/** The hill the manor stands on, the graveyard at its foot, and two dead trees behind it all. */
+const Grounds = memo(function Grounds() {
+  return (
+    <svg className="grounds" viewBox="0 0 1920 1080" preserveAspectRatio="none" aria-hidden="true">
+      <defs>
+        <linearGradient id="g-hill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#1a1328" />
+          <stop offset="1" stopColor="#07050c" />
+        </linearGradient>
+      </defs>
+      <g className="trees">
+        {TREES.map((d, i) => (
+          <path key={i} d={d} />
+        ))}
+      </g>
+      <path d="M880 1080 C920 950 990 872 1052 862 L1830 858 C1880 866 1910 894 1920 915 V1080 Z" fill="url(#g-hill)" />
+      <path d="M0 1080 V1040 C360 1010 700 1022 980 1000 C1300 976 1620 990 1920 972 V1080 Z" fill="#08060e" />
+      <g className="stones">
+        {STONES.map((s, i) => (
+          <path key={i} d={s.d} transform={s.transform} />
+        ))}
+      </g>
+    </svg>
+  );
+});
+
+/* ------------------------------------------------------------- the rest */
 
 /** Latest spirit photographs, pinned up like the evidence they are. */
 function SpiritPhotos({ photos }: { photos: string[] }) {

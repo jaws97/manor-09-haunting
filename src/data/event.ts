@@ -1,8 +1,14 @@
 import { ResidentCountInWords } from "./residents";
 
+/** the night's theme, in its two halves: the first is lit in Hulu green on the title card, the second burns pumpkin */
+const showHalves = ["Hulu", "ween"] as const;
+
 export const event = {
   manor: "Manor 09",
-  show: "The Haunting",
+  show: showHalves.join(""),
+  showHalves,
+  presents: "A Manor 09 production",
+  titleLine: `${ResidentCountInWords} residents. Not one of them at rest.`,
   tagline: `${ResidentCountInWords} residents. One night. Not one of them at rest.`,
   /** The night, local time (IST) */
   startsAt: "2026-10-07T18:30:00+05:30",
