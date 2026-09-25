@@ -32,7 +32,13 @@ const CRACKS = 8;
  * What was living in the envelope. One is picked per invitation and preloaded while the envelope
  * arrives, so it is decoded and ready the instant it is needed.
  */
-const SCARES = ["/media/scare/banshee.webp", "/media/scare/ghoul.webp"];
+const SCARES = [
+  "/media/scare/banshee.webp",
+  "/media/scare/ghoul.webp",
+  "/media/scare/hag.webp",
+  "/media/scare/werewolf.webp",
+  "/media/scare/doll.webp",
+];
 /** how long the thing stays in your face, in ms; matches the .scare animations in invite.css */
 const SCARE_MS = 1020;
 
