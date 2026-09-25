@@ -1,6 +1,6 @@
 @AGENTS.md
 
-# Manor 09 · The Haunting
+# Manor 09 · Huluween
 
 Halloween-themed birthday show for the September birthdays (event night 7 Oct 2026), built on the same engine as the movie-premiere show in `../Movie Themed` (Studio 09). Read [README.md](README.md) for the routes and how to run it, [PLAN.md](PLAN.md) for the concept, run of show and status.
 

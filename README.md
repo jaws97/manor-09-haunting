@@ -1,6 +1,6 @@
-# Manor 09 · The Haunting
+# Manor 09 · Huluween
 
-Halloween-themed show for the September birthdays (the night: 7 Oct 2026). The big screen is a haunted manor; phones are the invitations. Full concept, run of show and status: [PLAN.md](PLAN.md).
+Halloween-themed show for the September birthdays (the night: 7 Oct 2026). The big screen is a haunted manor; phones are the invitations. Full concept, run of show and status: [PLAN.md](PLAN.md). (The show was called "The Haunting" until the theme came through as Huluween; the live URL keeps the old name.)
 
 ## Run it
 
@@ -12,9 +12,9 @@ npm run dev
 | Route | Who | What |
 |---|---|---|
 | `/` | everyone, before the night | The gate: countdown, ticker, 28 dust-sheeted frames. Titles and portraits stay under the sheets until `revealAt` in `src/data/event.ts` (`NEXT_PUBLIC_REVEAL=1` previews the reveal). |
-| `/screen` | projector laptop (PIN) | The show. Always opens on the gates (QR) screen. Click once to wake the manor (sound + fullscreen). `←` `→` / space step the show if the remote dies; `Home` returns to the gates; `c` toggles the candy break. After a mid-show refresh, jump back from `/host`. |
+| `/screen` | projector laptop (PIN) | The show. Always opens on the gates (QR) screen. Click once to wake the manor (sound + fullscreen): the gates then play their own soundscape for as long as they are up. `←` `→` / space step the show if the remote dies; `Home` returns to the gates; `c` toggles the candy break. After a mid-show refresh, jump back from `/host`. |
 | `/host` | keeper's phone (PIN) | Remote: next/back, candy break (a snipe over the current phase), jump to phase or portrait, keeper's cues, mute, rehearsal tools, reset. |
-| `/invite` | guests | The gatehouse → a sealed invitation → the gatekeeper presses and holds the wax seal until it shatters. Lights the guest's window in the manor on `/screen`. |
+| `/invite` | guests | The gatehouse → a sealed invitation → the gatekeeper tears it open along the top, through the wax, and a moment later whatever was living in the envelope comes out at the guest (a one-second jump scare, then the stamp and the confetti). Lights the guest's window in the manor on `/screen`. |
 | `/join` | guests, once inside | The parlour: SCREAM button (tap, or the microphone), whispers and emoji that appear live on the big screen, spirit photographs. |
 
 **PIN:** set `HOST_PIN` in `.env.local` (required in production). In development it falls back to `0909`.
@@ -49,6 +49,8 @@ Keep the repo private until the night: it contains the residents' titles and the
 - `src/lib/show-core.ts` — show state + phase machine shared by server and client. Nothing secret lives in it.
 - `src/server/store.ts` — `ShowStore` seam: file-backed locally (`.data/`), `src/server/supabase-store.ts` on Vercel. Racy writes (screams, rooms) are single SQL statements or compare-and-swap.
 - `src/app/api/` — guests only ever POST (invite, enter, scream, whisper, photo). Only `/screen` and `/host` poll `/api/show`.
-- `src/lib/sfx.ts`, `src/lib/seal.ts` — all sound is synthesised with WebAudio (thunder, wind, creaks, knocks, bells, organ, wolves, whispers, bats; the quill, the wax, the cracking seal). Swap individual cues for recorded files later.
-- `src/components/screen/` — the stage: `atmosphere.tsx` (fog, lightning, bats, moon, candles, cobwebs), one file per phase.
+- `src/lib/sfx.ts`, `src/lib/seal.ts` — all sound is synthesised with WebAudio (thunder, wind, creaks, knocks, bells, organ, wolves, whispers, bats; the quill, the wax, the cracking seal, the jump scare's scream). Swap individual cues for recorded files later.
+- `src/lib/music.ts` — the music, synthesised too, on its own bus that ducks under the keeper and steps out for the candy break: the opening of Bach's Toccata in D minor under the title card, the gates' soundscape (a haunted music box, a crooked waltz, a theremin, the Dies Irae on a far-off bell, with owls, wolves, chains and footsteps in between), and the lullaby under the guest book. Everything but the Toccata and the Dies Irae (both public domain) was written for the manor.
+- `src/components/screen/` — the stage: `atmosphere.tsx` (fog, lightning and its bolts, bats, moon, candles, cobwebs), `Manor.tsx` (the house on the gates screen), one file per phase.
+- `public/media/scare/` — the two things that can come out of an envelope (generated, no gore); one is picked and preloaded per invitation.
 - Nothing is moderated. Whispers appear on the big screen as they arrive (emoji drift up, text shows as a whisper card) and are written into the guest book at the end; spirit photographs go straight onto the gates screen.

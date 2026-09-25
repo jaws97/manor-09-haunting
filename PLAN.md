@@ -1,4 +1,4 @@
-# Manor 09 · The Haunting — Plan
+# Manor 09 · Huluween — Plan
 
 The night: **7 Oct 2026**. 28 September-born "residents" of a haunted manor. The big screen is the manor; phones are invitations. The team set the theme (Halloween) after the movie-premiere show was built; this is a new show on the same, already load-tested engine (see `../Movie Themed`).
 
@@ -16,21 +16,21 @@ Every September birthday is a resident of Manor 09, with a creature title (Avira
 | `/join` | guest phone | The parlour: SCREAM (tap or microphone), whispers + emoji, spirit photographs |
 
 ## Run of show (`phase` = one DB row, broadcast to all screens)
-1. **gates** — the manor façade: 120 windows, one per room; each broken seal lights one (residents' rooms glow gold on the top floors); giant QR; "Just arrived · Room 047 · East Wing"; spirit-photo strip; trick-or-treaters strolling the bottom edge; moon, fog, bats, the odd lightning strike
+1. **gates** — the manor on its hill: two witch's-hat towers and a clock tower between them, 120 windows, one per room; each broken seal sends a light up from the front door to that guest's window, which lights for good (residents' rooms glow gold on the top floors; every twentieth guest the whole house flares). The house keeps itself busy: people pass the lit windows, something glows green in empty rooms, eyes blink in the towers, chimneys smoke, a crow caws on the roof, bats leave the belfry, a ghost drifts across the front, and the tower clock keeps real time and tolls the hour. Stars, clouds, the moon behind the house, bolts of lightning behind the towers, a graveyard and dead trees. Giant QR; "Just arrived · Room 047 · East Wing" and the room count; spirit-photo strip; trick-or-treaters strolling the bottom edge. Its own soundscape the whole time (music box, waltz, theremin, bell; owls, wolves, chains, footsteps upstairs; wind throughout), ducking under the keeper
 2. **ident** — first, like a production company card before a film: the team’s "Party People" ident, haunted cut: the letters as weathered stone on the manor lawn, three hooded figures, a black candle whose flame turns green, lightning, bats, to black (8s, shot at 21:9, `public/media/ident.mp4`), shown in a cinema band with “present” under it, through a burst of TV static; runs on
 3. **storm** — house lights down, wind, a strike shows the manor for the first time, the iron gates creak open, the camera pushes in through the door; runs on automatically
-4. **title** — "A Manor 09 production · The Haunting" with organ + keeper; waits for the host
+4. **title** — "A Manor 09 production · HULUWEEN", played on the opening of Bach's Toccata in D minor: HULU (Hulu green) flickers in letter by letter on the first two statements, WEEN (pumpkin) rises out of the fire on the third, and on the chord lightning, a flash through the word, shockwaves, candles, bats; the letters hover, ripple, gutter and drip, the keeper reads it; waits for the host. Leaving it, the letters rise off like spirits over the midnight clock (about 12s of organ before the keeper; Next after that)
 5. **midnight** — the tower clock’s hand creeps to twelve with the ticks, then the strike: lightning, bats, the tolls, “the manor wakes”; runs on into the séance
 6. **seance** — the spirit board: the keeper asks for a sign, the planchette spells S-E-P-T-E-M-B-E-R, then the resident count, then slides to YES as the candles gutter; waits for the host
 7. **gallery** — 28 × ~25s: three knocks on the door of their room → the door creaks open on a dust-sheeted gilt frame → lightning, the sheet whips off → the portrait lives (breathing, varnish, sheen) → title, plaque line, "Known by day as…", keeper reads it
 8. **scream** — the fear-o-meter (a thermometer with an eye for a bulb) driven by every phone; at peak: THE MANOR TREMBLES — the stage shakes, lightning, bats, confetti
-9. **guestbook** — the makers, the residents, the guests' last words, "Cake in the crypt", post-credits "Party People will return in November"
+9. **guestbook** — the makers, the residents, the guests' last words, "Cake in the crypt", post-credits "Party People will return in November", over the residents' lullaby on a music box
 
 Candy break (`c`): a trick-or-treat snipe over any phase — pumpkin, ghost and black cat on parade, candy raining, nonsense captions.
 
 ## Wow factors (ranked, in scope)
-1. The manor lighting up window by window as seals break at the gate
-2. Press-and-hold to break a wax seal: cracks that draw in one by one with haptic ticks, heals if let go, shatters into shards, the flap lifts, the letter rises, a bat escapes
+1. The manor lighting up window by window as seals break at the gate, each guest's light floating up from the front door to their room
+2. Tearing the invitation open through the wax seal: fibres tick under the thumb, the wax crazes and snaps, the strip flies, the letter rises, bats escape, and while the guest reads their room number the thing in the envelope comes out at them
 3. The ident → storm → title opening as one piece, with sound; the clock striking midnight tolls the séance in
 4. 28 no-face portraits in gilt frames, each revealed with knocks, a creaking door and lightning
 5. The séance: a planchette that actually spells, with whispers
@@ -52,6 +52,8 @@ Projector + speakers, dim not blackout → cream/parchment on near-black, candle
 ## Art pipeline
 27 portraits + 4 backdrops (manor exterior, gatehouse, gallery corridor, séance room) generated with `nano_banana_pro` at 2k (2 credits each, 62 credits total). Prompts: original scenes, the figure always seen from behind / hooded / silhouetted (no faces, so nobody needs to send a photo), no text, lower third kept dark for the HTML title. Two prompts were rejected by the generator’s filter (#20) and re-written more gently. The ident is one `nano_banana_pro` still of the stone letters (21:9, 2k) animated with `seedance_2_5` (8s, 1080p, native audio: wind, thunder, bats, a bell), then transcoded to H.264 for the projector browser; `public/media/ident.webp` is its poster frame. It plays in a 21:9 band on the 16:9 stage, like a film ident, with a “present” caption in HTML below the band. A first 16:9 pass (2 + 96 credits) was superseded by the 21:9 one (another 2 + 96) so nothing is cropped. `scripts/fetch-generated.mjs` pulls results in; `scripts/portrait-assets.mjs` derives thumbs, blurred room backdrops and accent colours.
 
+The jump scare is two more `nano_banana_pro` stills at 9:16, 2k (4 credits): a long-haired pale ghost and a gaunt ghoul, each lunging at the lens out of the dark, frightening but not gory, no text. They are creatures rather than anyone's likeness, so the no-faces rule for the portraits doesn't apply to them. Cropped of the generator's border (and the ghoul of the torch it insisted on holding) and saved as ~70KB webp in `public/media/scare/`.
+
 Photo tiers from the movie plan still apply if real likenesses are wanted later (A: face-forward stylised portrait from one photo; B: soft likeness; C: no face, what everyone has now).
 
 ## Build status
@@ -65,7 +67,9 @@ Photo tiers from the movie plan still apply if real likenesses are wanted later 
 
 **Also built (Sep 25):** a twenty-eighth resident, Deepti Bora (Sep 16) — “Deepti Borealis”, the will-o'-the-wisp — slotted into the gallery in date order at no. 17, which pushed Saikumar through Abhijit from 17–27 to 18–28. Their portraits, thumbs, room backdrops and accent colours were renumbered with them, and each was hash-checked against the old file so nobody inherited a stranger's face. The resident count is no longer written down in three places: the séance planchette now spells `residents.length`, so the board cannot spell a stale number again. The spoken and printed copy moved to twenty-eight.
 
-**Next:** **Deepti's portrait** — the only one of the twenty-eight not yet generated; she shows the placeholder art until `17.webp` (+ `-sm`, `-bg`) lands and `withoutPortrait` in `src/data/residents.ts` is emptied · organiser’s review at `/host/portraits` · real inside jokes in `src/data/residents.ts` taglines · keeper's voice (pick one of `docs/voice-samples`, then the 37 lines at `/host/script`) · full rehearsal on the real projector with a mid-range Android + iPhone (mic permission prompt, the tear on a real thumb, haptics).
+**Also built (Sep 25, afternoon):** the theme came through as **Huluween**, so the title card carries it instead of "The Haunting", in Cinzel Decorative (blackletter capitals made HULU unreadable) with HULU in Hulu green (`--hulu`, #1ce783) and WEEN in pumpkin, carved in on the Toccata and leaving on a transition of its own. The gates screen got a proper house (towers, clock tower, dormers, graveyard, sky) that lives and breathes while guests arrive, and a soundscape, because it was silent for the longest stretch of the night. Tearing an invitation now ends in a jump scare. The guest book has music. The music is its own bus in `src/lib/music.ts`; measured on the output: gates music about −22 dBFS RMS with the quiet stretches at −32 to −44, the Toccata about −15 dBFS peaking at −0.7 with no clipped samples, the phone's scream about −4 dBFS RMS. Also fixed: an unlit candle's flame kept flickering (so the séance's candles never actually went out). The title card's line and the keeper's reading of it spell the count through `ResidentCountInWords`, like the rest.
+
+**Next:** **the jump scare on real phones** (volume up; an iPhone's silent switch mutes it, and only Android vibrates) · **the gates soundscape on the venue speakers** (set the level with the room full, not empty) · **Deepti's portrait** — the only one of the twenty-eight not yet generated; she shows the placeholder art until `17.webp` (+ `-sm`, `-bg`) lands and `withoutPortrait` in `src/data/residents.ts` is emptied · organiser’s review at `/host/portraits` · real inside jokes in `src/data/residents.ts` taglines · keeper's voice (pick one of `docs/voice-samples`, then the 37 lines at `/host/script`) · full rehearsal on the real projector with a mid-range Android + iPhone (mic permission prompt, the tear on a real thumb, haptics).
 
 ## Open questions
 - Which residents want a real-likeness (tier A) portrait? Photo deadline would be Sep 30.
