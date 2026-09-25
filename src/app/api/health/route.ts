@@ -13,7 +13,8 @@ export async function GET() {
       storeKind === "file" && process.env.VERCEL
         ? "File store on Vercel: state will not survive between requests. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY."
         : undefined;
-    return Response.json({ ok: !warn && pin, store: storeKind, pin, phase: show.phase, rev: show.rev, warn, env });
+    const gates = show.gatesOpen ? "open" : "locked";
+    return Response.json({ ok: !warn && pin, store: storeKind, pin, phase: show.phase, gates, rev: show.rev, warn, env });
   } catch (e) {
     return Response.json({ ok: false, store: storeKind, pin, error: String((e as Error).message), env }, { status: 500 });
   }

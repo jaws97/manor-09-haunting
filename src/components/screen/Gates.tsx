@@ -1,19 +1,38 @@
 "use client";
 
-import { memo, useEffect, useRef } from "react";
+import { memo, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { gatesAmbience } from "@/lib/music";
+import * as sfx from "@/lib/sfx";
 import { ROOMS, roomLabel, wingOf, type Arrived } from "@/lib/show";
-import { Bats, Bolts, Cobweb, Fog, Lightning, Moon } from "./atmosphere";
+import { Bats, Bolts, Cobweb, Fog, Lightning, lightning, Moon } from "./atmosphere";
 import { Parade } from "./Candy";
+import { reduced } from "./hooks";
 import { Manor } from "./Manor";
+
+/** how long the gates take to open, from the strike to the last of the QR's glow; matches .qr-gate.opening in screen.css */
+const OPENING_MS = 3400;
 
 /**
  * The gates: a QR for the invitation, the manor lighting up window by window
  * as seals are broken at the gate, and the latest arrival announced. It is on
  * screen for the whole arrival, so it has a soundscape of its own (see
  * gatesAmbience in lib/music.ts), which starts once the operator wakes the manor.
+ *
+ * While the house fills the gates are locked: the QR is shut behind them, so
+ * nobody gets to what lives in the envelope before everyone else. The keeper
+ * opens them once the room is full.
  */
-export function Gates({ arrived, photos, armed }: { arrived: Arrived[]; photos: string[]; armed: boolean }) {
+export function Gates({
+  arrived,
+  photos,
+  armed,
+  open,
+}: {
+  arrived: Arrived[];
+  photos: string[];
+  armed: boolean;
+  open: boolean;
+}) {
   const latest = arrived[arrived.length - 1];
 
   useEffect(() => {
@@ -21,6 +40,26 @@ export function Gates({ arrived, photos, armed }: { arrived: Arrived[]; photos: 
     const ambience = gatesAmbience();
     return () => ambience.stop();
   }, [armed]);
+
+  // The keeper opens the gates: lightning, the padlock springs and drops, the chain runs off and the
+  // gates swing in on the QR. Only when it happens on screen: a screen that loads with them open
+  // simply shows the QR. A layout effect, so the render where they are open but not yet swinging is
+  // never painted: it would flash the bare QR for a frame.
+  const [opening, setOpening] = useState(0);
+  const wasOpen = useRef(open);
+  useLayoutEffect(() => {
+    const was = wasOpen.current;
+    wasOpen.current = open;
+    if (!open || was || reduced()) return;
+    setOpening((n) => n + 1);
+    lightning.strike(true);
+    const t = [
+      setTimeout(sfx.unchain, 250),
+      setTimeout(() => sfx.creak(true), 900),
+      setTimeout(() => setOpening(0), OPENING_MS),
+    ];
+    return () => t.forEach(clearTimeout);
+  }, [open]);
 
   return (
     <div className="gates">
@@ -39,15 +78,21 @@ export function Gates({ arrived, photos, armed }: { arrived: Arrived[]; photos: 
           <Cobweb corner="tl" size={150} />
           <Cobweb corner="br" size={120} />
           <h1>
-            Manor 09<span>The gates are open</span>
+            Manor 09<span key={String(open)}>{open ? "The gates are open" : "The gates are locked"}</span>
           </h1>
         </div>
         <div className="gates-qr">
-          <InviteQr />
-          <div>
-            <b>Scan for your invitation</b>
-            <p>Show it at the gate. The gatekeeper breaks the seal. No seal, no candy.</p>
+          <div className={`qr-gate${!open ? " locked" : opening ? " opening" : ""}`}>
+            <InviteQr />
+            {(!open || opening > 0) && <IronGates key={opening} />}
           </div>
+          {/* the chained gates say "not yet" by themselves; the words come with the QR */}
+          {open && (
+            <div className="qr-say">
+              <b>Scan for your invitation</b>
+              <p>Show it at the gate. The gatekeeper breaks the seal. No seal, no candy.</p>
+            </div>
+          )}
         </div>
         <SpiritPhotos photos={photos} />
       </div>
@@ -216,6 +261,98 @@ function SpiritPhotos({ photos }: { photos: string[] }) {
         <img key={id} src={`/api/photo/${id}`} alt="" style={{ rotate: `${((i * 37) % 13) - 6}deg` }} />
       ))}
     </div>
+  );
+}
+
+/** the left leaf's top rail sweeps up toward the middle, where the two leaves meet (a 144×288 leaf) */
+const railY = (x: number) => {
+  const t = x / 144;
+  return (1 - t) ** 2 * 60 + 2 * t * (1 - t) * 56 + t ** 2 * 36;
+};
+const spear = (x: number, top: number) =>
+  `M${x} ${(top - 15).toFixed(1)} L${x - 6} ${top.toFixed(1)} L${x} ${(top + 4).toFixed(1)} L${x + 6} ${top.toFixed(1)}Z`;
+const PICKETS = [29, 53, 77, 101, 125];
+const LEAF = {
+  bars: [
+    "M0 60 Q72 56 144 36 M0 100 H144 M0 200 H144 M0 278 H144",
+    ...PICKETS.map((x) => `M${x} 288 V${(railY(x) - 16).toFixed(1)}`),
+  ].join(" "),
+  // the hinge stile ends in a ball; the meeting stile stands tallest, so the pair peaks in the middle
+  posts: `M5 288 V${(railY(5) - 2).toFixed(1)} M139 288 V${(railY(139) - 22).toFixed(1)}`,
+  tips: [...PICKETS.map((x) => spear(x, railY(x) - 16)), spear(139, railY(139) - 22)].join(" "),
+  ball: { cx: 5, cy: railY(5) - 7 },
+  rings: [41, 65, 89, 113].flatMap((x) => [
+    [x, 80],
+    [x, 239],
+  ]),
+};
+
+/** a chain between two points, its links alternately face-on and edge-on (in the 288×288 overlay) */
+function chainLinks(x1: number, y1: number, x2: number, y2: number) {
+  const n = Math.round(Math.hypot(x2 - x1, y2 - y1) / 11);
+  const ang = ((Math.atan2(y2 - y1, x2 - x1) * 180) / Math.PI).toFixed(1);
+  return Array.from({ length: n }, (_, i) => {
+    const x = x1 + ((x2 - x1) * (i + 0.5)) / n;
+    const y = y1 + ((y2 - y1) * (i + 0.5)) / n;
+    return { x, y, turn: `rotate(${ang} ${x.toFixed(1)} ${y.toFixed(1)})`, face: i % 2 === 0 };
+  });
+}
+// wound across both leaves, crossing where they meet, and the padlock through the crossing
+const CHAIN = [...chainLinks(52, 132, 236, 194), ...chainLinks(52, 194, 236, 132)];
+
+/**
+ * While the house fills, the QR waits behind a pair of iron gates, chained and padlocked, with the
+ * drive up to the house beyond them. When the keeper opens them the padlock springs and drops, the
+ * chain runs off and the gates swing in (screen.css, under .qr-gate.opening).
+ */
+function IronGates() {
+  return (
+    <div className="qr-iron" aria-hidden="true">
+      <i className="qr-beyond" />
+      <GateLeaf side="l" />
+      <GateLeaf side="r" />
+      <svg className="qr-chain" viewBox="0 0 288 288">
+        <defs>
+          <linearGradient id="qr-brass" x1="0" y1="0" x2="0.4" y2="1">
+            <stop offset="0" stopColor="#f1d383" />
+            <stop offset="0.45" stopColor="#b98a24" />
+            <stop offset="1" stopColor="#5e430c" />
+          </linearGradient>
+        </defs>
+        <g className="chain">
+          {CHAIN.map(({ x, y, turn, face }, i) =>
+            face ? (
+              <ellipse key={i} cx={x} cy={y} rx="7.5" ry="4.2" transform={turn} />
+            ) : (
+              <line key={i} className="edge" x1={x - 6} y1={y} x2={x + 6} y2={y} transform={turn} />
+            ),
+          )}
+        </g>
+        <g className="padlock">
+          <path className="shackle" d="M133 177 V166 A11 11 0 0 1 155 166 V177" />
+          <rect className="body" x="124" y="174" width="40" height="34" rx="6" />
+          <circle className="keyhole" cx="144" cy="186" r="4.5" />
+          <rect className="keyhole" x="142" y="188" width="4" height="10" rx="1" />
+        </g>
+      </svg>
+    </div>
+  );
+}
+
+/** one leaf, hinged at the outer edge; the right one is the left one mirrored */
+function GateLeaf({ side }: { side: "l" | "r" }) {
+  return (
+    <svg className={`qr-leaf ${side}`} viewBox="0 0 144 288">
+      <g transform={side === "r" ? "matrix(-1 0 0 1 144 0)" : undefined}>
+        <path className="iron" d={LEAF.bars} />
+        <path className="iron post" d={LEAF.posts} />
+        <path className="tips" d={LEAF.tips} />
+        <circle className="tips" r="5.5" {...LEAF.ball} />
+        {LEAF.rings.map(([x, y]) => (
+          <circle key={`${x}-${y}`} className="ring" cx={x} cy={y} r="9" />
+        ))}
+      </g>
+    </svg>
   );
 }
 

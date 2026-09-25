@@ -12,16 +12,16 @@ npm run dev
 | Route | Who | What |
 |---|---|---|
 | `/` | everyone, before the night | The gate: countdown, ticker, 28 dust-sheeted frames. Titles and portraits stay under the sheets until `revealAt` in `src/data/event.ts` (`NEXT_PUBLIC_REVEAL=1` previews the reveal). |
-| `/screen` | projector laptop (PIN) | The show. Always opens on the gates (QR) screen. Click once to wake the manor (sound + fullscreen): the gates then play their own soundscape for as long as they are up. `←` `→` / space step the show if the remote dies; `Home` returns to the gates; `c` toggles the candy break. After a mid-show refresh, jump back from `/host`. |
-| `/host` | keeper's phone (PIN) | Remote: next/back, candy break (a snipe over the current phase), jump to phase or portrait, keeper's cues, mute, rehearsal tools, reset. |
-| `/invite` | guests | The gatehouse, where the manor’s black cat jumps down off the wall and brings the guest a sealed invitation → the gatekeeper tears it open along the top, through the wax, and a moment later whatever was living in the envelope comes out at the guest (a one-second jump scare, then the stamp and the confetti). Lights the guest's window in the manor on `/screen`. |
+| `/screen` | projector laptop (PIN) | The show. Always opens on the gates, and they start **locked**: the manor lives and plays its soundscape, but the QR is shut behind chained iron gates, so the first few in can't get to what lives in the envelope before everyone else. When the house is full, open them (**Open the gates** on `/host`, or `→` here): lightning, the padlock drops, the gates swing in on the QR, and the whole room tears its invitations at once. Click once to wake the manor (sound + fullscreen): the gates then play their own soundscape for as long as they are up. `←` `→` / space step the show if the remote dies (at the gates, `→` opens them and `←` locks them again); `Home` returns to the gates; `c` toggles the candy break. After a mid-show refresh, jump back from `/host`. |
+| `/host` | keeper's phone (PIN) | Remote: open the gates, next/back, candy break (a snipe over the current phase), jump to phase or portrait, keeper's cues, mute, rehearsal tools, reset (which locks the gates again). |
+| `/invite` | guests | The gatehouse, where the manor’s black cat jumps down off the wall and brings the guest a sealed invitation → the gatekeeper tears it open along the top, through the wax, and a moment later whatever was living in the envelope comes out at the guest (a one-second jump scare, then the stamp and the confetti). Lights the guest's window in the manor on `/screen`. Turns everyone away while the gates are locked, so a forwarded link gets nobody in early. |
 | `/join` | guests, once inside | The parlour: SCREAM button (tap, or the microphone), whispers and emoji that appear live on the big screen, spirit photographs. |
 
 **PIN:** set `HOST_PIN` in `.env.local` (required in production). In development it falls back to `0909`.
 
 **Local data:** `npm run dev` always uses the file store in `.data/`, even when `.env.local` holds Supabase credentials, so rehearsals and test invitations never land in the live database. To point local dev at the live database on purpose, run it with `STORE=supabase` (PowerShell: `$env:STORE="supabase"; npm run dev`). `/api/health` tells you which store is active.
 
-**Rehearse without a crowd:** `npm run rehearse` simulates 100 guests arriving, breaking their seals, whispering and screaming (open `/screen` first; try `-- --guests 150 --arrive 60`). Reset from `/host` afterwards.
+**Rehearse without a crowd:** `npm run rehearse` simulates 100 guests arriving, breaking their seals, whispering and screaming (open `/screen` first and open the gates from `/host`; try `-- --guests 150 --arrive 60`). Reset from `/host` afterwards.
 
 **The keeper (announcer):** lines live in `src/data/vo.ts`; `/host/script` is the recording sheet. Drop takes into `public/media/vo/<id>.mp3` — until then the browser voice stands in, slow and low.
 
@@ -39,7 +39,7 @@ Vercel functions share no memory or disk, so the deployed app must use the Supab
 2. `node scripts/setup-supabase.mjs` — runs [supabase/schema.sql](supabase/schema.sql) and creates the private `m09-photos` bucket. Safe to re-run; `--wipe` clears show data.
 3. **Vercel → Project → Settings → Environment Variables:** `HOST_PIN` (required; the app refuses to run staff pages without it), `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` (already present if the integration is connected). The service-role key is server-only; never prefix it with `NEXT_PUBLIC_`.
 4. Deploy, then open `/api/health`. You want `{"ok":true,"store":"supabase","pin":true}`.
-5. Load-test the real thing: `npm run rehearse -- --url https://<your-app>.vercel.app`, then **Reset show** from `/host`.
+5. Load-test the real thing: open the gates on `/host`, run `npm run rehearse -- --url https://<your-app>.vercel.app`, then **Reset show** from `/host`.
 
 Keep the repo private until the night: it contains the residents' titles and the surprise.
 

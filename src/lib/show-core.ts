@@ -20,7 +20,7 @@ export const PHASES = [
 export type Phase = (typeof PHASES)[number];
 
 export const PHASE_LABEL: Record<Phase, string> = {
-  gates: "The gates are open",
+  gates: "The gates",
   storm: "The storm breaks",
   midnight: "The clock strikes midnight",
   ident: "Party People ident",
@@ -31,8 +31,13 @@ export const PHASE_LABEL: Record<Phase, string> = {
   guestbook: "The guest book",
 };
 
+/** Where the show is, in words: at the gates, whether they are locked. */
+export const phaseLabel = (s: Pick<ShowState, "phase" | "gatesOpen">) =>
+  s.phase !== "gates" ? PHASE_LABEL[s.phase] : s.gatesOpen ? "The gates are open" : "The gates are locked";
+
 /** What the keeper should know before pressing a phase; shown under it on the remote. */
 export const PHASE_NOTE: Partial<Record<Phase, string>> = {
+  gates: "Locked while the house fills: no QR, and the invitation page turns people away. Next opens them; Next again starts the show",
   ident: "Opens the show, then runs on by itself: the storm, then the title card",
   title: "About 12s of organ while the title carves itself in, then the keeper reads it. Next after that",
   midnight: "Runs on by itself into the séance",
@@ -58,6 +63,12 @@ export type Whisper = { id: string; name: string; text: string; at: number };
 
 export type ShowState = {
   phase: Phase;
+  /**
+   * The QR waits behind locked gates while the house fills, and the invitation page turns people
+   * away, so nobody meets what lives in the envelope before the room is full: the keeper opens the
+   * gates and the whole house tears its invitation at once.
+   */
+  gatesOpen: boolean;
   /** index into residents while phase === "gallery" */
   portrait: number;
   arrived: Arrived[];
@@ -80,6 +91,7 @@ export type AnnounceCue = (typeof ANNOUNCE_CUES)[number];
 
 export const initialShow: ShowState = {
   phase: "gates",
+  gatesOpen: false,
   portrait: 0,
   arrived: [],
   screams: 0,
@@ -106,15 +118,22 @@ export type HostAction =
 
 export function stepShow(s: ShowState, a: HostAction, residents: number): ShowState {
   const i = PHASES.indexOf(s.phase);
-  // moving the show along always ends a candy break
-  const go = (next: Partial<ShowState>): ShowState => ({ ...s, ...next, candy: false });
+  // Moving the show along always ends a candy break. Leaving the gates opens them for good, even when
+  // the keeper jumps past them: latecomers need an invitation to get into the parlour and scream.
+  const go = (next: Partial<ShowState>): ShowState => {
+    const to = { ...s, ...next, candy: false };
+    return to.phase === "gates" ? to : { ...to, gatesOpen: true };
+  };
   switch (a.type) {
     case "next":
       if (a.ifPhase && a.ifPhase !== s.phase) return s;
+      // the first Next at the gates opens them; the one after starts the show
+      if (s.phase === "gates" && !s.gatesOpen) return go({ gatesOpen: true });
       if (s.phase === "gallery" && s.portrait < residents - 1) return go({ portrait: s.portrait + 1 });
       return i < PHASES.length - 1 ? go({ phase: PHASES[i + 1] }) : s;
     case "prev":
       if (s.phase === "gallery" && s.portrait > 0) return go({ portrait: s.portrait - 1 });
+      if (s.phase === "gates" && s.gatesOpen) return go({ gatesOpen: false });
       return i > 0 ? go({ phase: PHASES[i - 1] }) : s;
     case "goto":
       return PHASES.includes(a.phase) ? go({ phase: a.phase }) : s;

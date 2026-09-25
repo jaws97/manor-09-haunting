@@ -92,7 +92,7 @@ function Gatehouse({
   onIssued: () => void;
 }) {
   const [name, setName] = useState("");
-  const [state, setState] = useState<"idle" | "busy" | "failed">("idle");
+  const [state, setState] = useState<"idle" | "busy" | "failed" | "locked">("idle");
   const ok = name.trim().length >= 2 && state !== "busy";
 
   const issue = async (e: React.FormEvent) => {
@@ -104,6 +104,11 @@ function Gatehouse({
     setState("busy");
     try {
       const res = await post("/api/invite", { name });
+      // the keeper hasn't opened the gates yet: the cat goes back up on the wall
+      if (res.status === 423) {
+        onFailed();
+        return setState("locked");
+      }
       if (!res.ok) throw new Error(String(res.status));
       const issued = (await res.json()) as InviteData;
       onIssued();
@@ -152,6 +157,9 @@ function Gatehouse({
           {state === "busy" ? "Summoning…" : "Summon my invitation"}
         </button>
         {state === "failed" && <p role="alert">The cat came back without it. Try once more.</p>}
+        {state === "locked" && (
+          <p role="alert">The gates are still locked. They open once the whole house is in: watch the big screen, then try again.</p>
+        )}
       </form>
 
       <ol className="gh-steps">

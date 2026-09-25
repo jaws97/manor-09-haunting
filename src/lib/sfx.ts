@@ -224,6 +224,24 @@ export function creak(long = false) {
   o.stop(t + 1.7 * k);
 }
 
+/** the padlock on the gates springs, the chain runs off the bars link over link, and the lock hits the flagstones */
+export function unchain() {
+  noise("bandpass", 4200, 2, { a: 0.001, d: 0.04, peak: 0.6 });
+  tone(3100, "square", { a: 0.001, d: 0.03, peak: 0.04 });
+  let at = 0.12;
+  for (let i = 0; i < 12; i++) {
+    // quicker as it falls
+    at += Math.max(0.035, 0.1 - i * 0.005);
+    const v = 0.09 * (0.6 + Math.random() * 0.4);
+    for (const f of [2100, 3350, 4800])
+      tone(f * (0.9 + Math.random() * 0.22), "sine", { at, a: 0.001, d: 0.05 + Math.random() * 0.1, peak: v * (0.4 + Math.random() * 0.6), ring: true });
+    noise("highpass", 3500, 0.7, { at, a: 0.001, d: 0.012, peak: v * 1.4 });
+  }
+  at += 0.1;
+  tone(160, "sine", { at, a: 0.002, d: 0.3, peak: 0.4, ring: true }, 90);
+  noise("lowpass", 1200, 0.8, { at, a: 0.002, d: 0.2, peak: 0.45 });
+}
+
 /** knuckles on an oak door */
 export function knock(n = 3) {
   for (let i = 0; i < n; i++) {

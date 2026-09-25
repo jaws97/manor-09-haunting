@@ -1,7 +1,7 @@
 "use client";
 
 import { pad2, residents } from "@/data/residents";
-import { PHASES, PHASE_LABEL, PHASE_NOTE, ROOMS, useShow, type AnnounceCue } from "@/lib/show";
+import { PHASES, PHASE_LABEL, PHASE_NOTE, ROOMS, phaseLabel, useShow, type AnnounceCue } from "@/lib/show";
 
 const ANNOUNCE: [AnnounceCue, string][] = [
   ["gates", "“Welcome… present your invitation”"],
@@ -15,12 +15,14 @@ export function Host() {
 
   const r = residents[state.portrait];
   const n = residents.length;
+  // at the locked gates, Next opens them rather than starting the show, so it says so
+  const locked = state.phase === "gates" && !state.gatesOpen;
 
   return (
     <main className="host">
       <header>
         <span>Manor 09 · keeper&apos;s remote{!online && " · offline, retrying…"}</span>
-        <b>{PHASE_LABEL[state.phase]}</b>
+        <b>{phaseLabel(state)}</b>
         {state.phase === "gallery" && (
           <em>
             {pad2(r.no)} / {n} · {r.title}
@@ -33,7 +35,7 @@ export function Host() {
           ◀ Back
         </button>
         <button type="button" className="go" onClick={() => dispatch({ type: "next" })}>
-          Next ▶
+          {locked ? "Open the gates ▶" : "Next ▶"}
         </button>
       </div>
       {/* the candy snipe sits on top of the current phase; Next / Back end it too */}

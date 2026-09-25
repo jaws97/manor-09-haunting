@@ -5,7 +5,7 @@ import { residents } from "@/data/residents";
 import { showCues } from "@/data/vo";
 import * as sfx from "@/lib/sfx";
 import { say, setVoMuted, stopVo } from "@/lib/vo";
-import { PHASE_LABEL, useShow } from "@/lib/show";
+import { phaseLabel, useShow } from "@/lib/show";
 import { Candy } from "./Candy";
 import { Gates } from "./Gates";
 import { GuestBook } from "./GuestBook";
@@ -22,8 +22,8 @@ export function Screen() {
   const [armed, setArmed] = useState(false);
 
   // There is one projector on one laptop, so opening this page IS the start of the night: always begin
-  // at the gates (QR) screen, whatever phase was left behind by a rehearsal. Guests already in and
-  // screams are kept. After a mid-show refresh the host jumps back from /host.
+  // at the gates, whatever phase was left behind by a rehearsal. Whether they are locked, guests already
+  // in and screams are kept (a reset locks them again). After a mid-show refresh the host jumps back from /host.
   const [opened, setOpened] = useState(false);
   const opening = useRef(false);
   useEffect(() => {
@@ -94,7 +94,9 @@ export function Screen() {
       >
         {ready && opened && (
           <div className="phase" key={state.phase}>
-            {state.phase === "gates" && <Gates arrived={state.arrived} photos={state.photos} armed={armed} />}
+            {state.phase === "gates" && (
+              <Gates arrived={state.arrived} photos={state.photos} armed={armed} open={state.gatesOpen} />
+            )}
             {state.phase === "storm" && <Storm onDone={() => void dispatch({ type: "next", ifPhase: "storm" })} />}
             {state.phase === "midnight" && (
               <Midnight onDone={() => void dispatch({ type: "next", ifPhase: "midnight" })} />
@@ -124,7 +126,7 @@ export function Screen() {
         <div className="grain" aria-hidden="true" />
         <div className="vignette" aria-hidden="true" />
         <div className="phase-chip">
-          {state.candy ? "Candy break" : PHASE_LABEL[state.phase]}
+          {state.candy ? "Candy break" : phaseLabel(state)}
           {!online && " · reconnecting…"}
         </div>
         {/* the gates screen is the busiest: two whisper cards there, three elsewhere */}

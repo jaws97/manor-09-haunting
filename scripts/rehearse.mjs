@@ -8,7 +8,8 @@
  *   node scripts/rehearse.mjs --guests 150 --arrive 20 --scream 25
  *   node scripts/rehearse.mjs --url https://your-deploy.vercel.app
  *
- * Uses only the public guest endpoints (no PIN). Reset afterwards from /host.
+ * Uses only the public guest endpoints (no PIN), so open the gates first (Next on /host): the
+ * gatehouse turns everyone away while they are locked. Reset afterwards from /host.
  */
 const arg = (name, fallback) => {
   const i = process.argv.indexOf(`--${name}`);
@@ -88,6 +89,11 @@ const pct = (p) => {
 };
 
 console.log(`Rehearsal against ${BASE}: ${GUESTS} guests arriving over ${ARRIVE_S}s`);
+const before = await fetch(BASE + "/api/show").then((r) => r.json()).catch(() => null);
+if (before && !before.gatesOpen) {
+  console.error("The gates are locked, so the gatehouse would turn every guest away. Open them first (Next on /host, or → on /screen).");
+  process.exit(1);
+}
 const cast = await castNames();
 console.log(cast.length ? `Found ${cast.length} residents` : "No resident list found; everyone arrives as a plain guest");
 const castPool = [...cast].sort(() => Math.random() - 0.5);
