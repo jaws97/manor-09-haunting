@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Bats, Fog, Moon } from "@/components/screen/atmosphere";
+import { countInWords } from "@/lib/count-words";
 import { createStore } from "@/lib/store";
 
 /**
@@ -121,7 +122,8 @@ export function Gate({
         <div className="lamp l1" />
         <div className="lamp l2" />
         <p>
-          <b>Manor 09</b>Twenty-eight residents. Not one of them at rest.
+          <b>Manor 09</b>
+          {countInWords(residents.length, true)} residents. Not one of them at rest.
         </p>
       </div>
       <footer>Manor 09 · one night only.</footer>

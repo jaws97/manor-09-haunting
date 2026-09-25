@@ -1,3 +1,5 @@
+import { countInWords } from "@/lib/count-words";
+
 export type PortraitTier = "A" | "B" | "C";
 
 export type Resident = {
@@ -106,6 +108,14 @@ export const residents: Resident[] = raw.map(([title, name, lore, day], i) => ({
   tier: "C",
   portrait: withPortrait.has(i + 1) ? `/portraits/${String(i + 1).padStart(2, "0")}.webp` : undefined,
 }));
+
+/**
+ * How many residents there are, spelled out for the copy that says it aloud —
+ * the title card, the keeper's lines. Written down once, because it has twice
+ * been written down in several places and gone stale in all of them. The public
+ * gate page spells its own from `countInWords`, since it may not import this file.
+ */
+export const ResidentCountInWords = countInWords(residents.length, true);
 
 export const pad2 = (n: number) => String(n).padStart(2, "0");
 /** skips initials, so "R Ketan Kumar" is Ketan rather than R */

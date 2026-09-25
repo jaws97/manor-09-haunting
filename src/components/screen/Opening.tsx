@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useEffectEvent, useRef, useState } from "react";
+import { ResidentCountInWords } from "@/data/residents";
 import { showCues } from "@/data/vo";
 import * as sfx from "@/lib/sfx";
 import { say } from "@/lib/vo";
@@ -230,7 +231,7 @@ export function TitleCard() {
       <div className="season-card">
         <span>A Manor 09 production</span>
         <b>The Haunting</b>
-        <em>Twenty-seven residents. Not one of them at rest.</em>
+        <em>{ResidentCountInWords} residents. Not one of them at rest.</em>
       </div>
     </div>
   );
